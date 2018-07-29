@@ -1,0 +1,216 @@
+#!/usr/bin/perl
+###############################################################################
+##
+# FILE:		reldate
+# PRODUCT:	tools
+# AUTHOR:	Ingo Karkat <ingo@karkat.de>
+# DATE CREATED:	09-Feb-2016
+#
+###############################################################################
+# CONTENTS:
+#
+# REMARKS:
+#
+# REVISION	DATE		REMARKS
+#	003	11-May-2018	ENH: Allow to handle UTC time in addition to
+#				local time. Add parsing for timezone and pass
+#				that to toEpoch(), which then uses either
+#				timelocal() or timegm().
+#				ENH: Add out-of-the-box support for
+#				"2018-05-11T07:15:39Z", e.g. used in Kubernetes
+#				kubectl JSON output.
+#	002	19-Feb-2016	ENH: Allow to parse textual months (Jan,
+#				January), too.
+#	001	09-Feb-2016	file creation
+#
+# @(#)reldate	003	(11-May-2018)	tools
+###############################################################################
+
+use List::Util qw(first);
+use Modern::Perl;
+use Getopt::Long;
+use Pod::Usage;
+use Time::Duration;
+use Time::Local;
+use Time::Piece;
+
+my @monthsShort = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
+my @monthsLong = qw/January February March April May June July August September October November December/;
+my $monthsExpr = join('|', @monthsShort, @monthsLong);
+my $datePattern = qr/\b(?<day>\d\d)-(?<month>(?:\d\d|${monthsExpr}))-(?<year>\d\d\d\d)(?: (?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d))?)?\b|\b(?<month>${monthsExpr})\s+(?<day>\d{1,2})\s+(?:(?<year>\d\d\d\d)|(?<hours>\d\d):(?<minutes>\d\d))\b|\b(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)T(?<hours>\d\d):(?<minutes>\d\d):(?<seconds>\d\d)(?<timezone>Z)\b/;
+my $keepWidth = 'no';
+my $precision = 1;
+my $isPreferPast = 0;
+my $isPreferFuture = 0;
+my $prefix = '';
+my $suffix = '';
+
+sub numericalMonth
+{
+    my $month = shift;
+    return $month - 1 if $month =~ m/^\d+$/;
+
+    my $index = first { $monthsShort[$_] eq $month } 0 .. $#monthsShort;
+    return $index if defined $index;
+
+    $index = first { $monthsLong[$_] eq $month } 0 .. $#monthsLong;
+    return $index if defined $index;
+
+    die "Should have parsed month";
+}
+
+sub toEpoch
+{
+    my ($seconds, $minutes, $hours, $day, $month, $year, $timezone) = @_;
+    my $timeConverter = ($timezone ? \&timegm : \&timelocal);
+
+    my $epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year));
+
+    my $now = $^T;
+    if (! defined($year) && $isPreferPast && $now - $epoch < 0) {
+	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year - 1));
+    } elsif (! defined($year) && $isPreferFuture && $now - $epoch > 0) {
+	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year + 1));
+    }
+
+    return $epoch;
+}
+
+sub reldate
+{
+    my $epoch = shift;
+    my $originalDate = shift;
+    my $relativeDate= ago($^T - $epoch, $precision);
+
+    # Massage the output from Time::Duration to make it more amenable to my
+    # preferences.
+    $relativeDate = 'just now' if ($relativeDate eq 'right now');
+    $relativeDate = 'yesterday' if ($relativeDate eq '1 day ago');
+    $relativeDate = 'tomorrow' if ($relativeDate eq '1 day from now');
+    $relativeDate =~ s/(.*) from now$/in $1/;
+
+    if ($keepWidth ne 'no') {
+	my $originalWidth = length($originalDate);
+	my $flag = ($keepWidth eq 'right-aligned' ? '' : '-');
+	$relativeDate = sprintf("%${flag}${originalWidth}s", $relativeDate);
+    }
+    return $relativeDate;
+}
+
+my $help = 0;
+my $man = 0;
+
+GetOptions(
+    'help|h|?' => \$help,
+    'man' => \$man,
+    'date-pattern=s' => \$datePattern,
+    'keep-width:s' => \$keepWidth,
+    'precision=i' => \$precision,
+    'prefer-past' => \$isPreferPast,
+    'prefer-future' => \$isPreferFuture,
+    'prefix=s' => \$prefix,
+    'suffix=s' => \$suffix
+
+) or pod2usage(2);
+pod2usage(-exitval => 0, -verbose => 0) if $help;
+pod2usage(-exitval => 0, -verbose => 2) if $man;
+pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
+
+if (@ARGV == 1) {
+    my $file = $ARGV[0];
+    unless (-e $file) {
+	warn "$file does not exist!\n";
+	exit 1;
+    }
+    my $age = $^T - (stat($file))[9];  # 9 = modtime
+    print ago($age, $precision), "\n";
+} else {
+    while (<>) {
+	s/${datePattern}/$prefix . reldate(toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
+	print;
+    }
+}
+
+__END__
+
+=head1 NAME
+
+reldate - Show relative dates instead of absolute ones
+
+=head1 SYNOPSIS
+
+ reldate [--date-pattern PATTERN] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--prefix STRING] [--suffix STRING]
+ reldate FILE
+
+    Options:
+    --date-pattern PATTERN	parse PATTERN as a date
+    --keep-width		maintain width of replaced date
+    --precision N		max number of time units used
+    --prefer-past		assume incomplete date is in past
+    --prefer-future		assume incomplete date is in future
+    --prefix STRING		text before relative date
+    --suffix STRING		text after relative date
+    -?|-h|--help		brief help message
+    --man			full documentation
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--date-pattern>
+
+Parse any match of PATTERN as a date.
+
+=item B<--keep-width>
+
+Pad any shorter relative date so that it occupies the same space as the original one.
+
+=item B<--precision>
+
+No more than N units will be used in expressing the time duration. Default is 1, so it uses only one of seconds / minutes / hours / days / ...
+
+=item B<--prefer-past>
+
+If an incomplete date specification (e.g. without a year) is parsed, assume that the date is in the past.
+
+=item B<--prefer-future>
+
+If an incomplete date specification (e.g. without a year) is parsed, assume that the date is in the future.
+
+=item B<--prefix>
+
+STRING to put before a recognized relative date. E.g. [ or ^[[01m.
+
+=item B<--suffix>
+
+STRING to put after a recognized relative date. E.g. ] or ^[[0m.
+
+=item B<--help>, B<-h>, B<-?>
+
+Print a brief help message and exits.
+
+=item B<--man>
+
+Prints the manual page and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+B<reldate> turns absolute dates (e.g. I<09-02-2016>) into timespans relative to the current date (I<2 days ago>).
+
+It prints the modification date, relative to now, of the passed FILE.
+
+It parses text from stdin and replace any date [as specified by PATTERN] with a relative one.
+
+=head1 DEPENDENCIES
+
+On Ubuntu, this requires the following packages:
+
+  # apt-get install libmodern-perl-perl libtime-duration-perl
+
+On CentOs, this requires the following packages:
+
+  # yum install perl-Modern-Perl perl-Time-Duration perl-Time-Piece
+
+=cut
