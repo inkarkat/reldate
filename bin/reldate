@@ -76,11 +76,10 @@ sub toEpoch
     return $epoch;
 }
 
-sub reldate
+sub timespanToReldate
 {
-    my $epoch = shift;
-    my $originalDate = shift;
-    my $relativeDate= ago($^T - $epoch, $precision);
+    my $timespan = shift;
+    my $relativeDate= ago($timespan, $precision);
 
     # Massage the output from Time::Duration to make it more amenable to my
     # preferences.
@@ -88,6 +87,15 @@ sub reldate
     $relativeDate = 'yesterday' if ($relativeDate eq '1 day ago');
     $relativeDate = 'tomorrow' if ($relativeDate eq '1 day from now');
     $relativeDate =~ s/(.*) from now$/in $1/;
+
+    return $relativeDate;
+}
+
+sub reldate
+{
+    my $epoch = shift;
+    my $originalDate = shift;
+    my $relativeDate= timespanToReldate($^T - $epoch);
 
     if ($keepWidth ne 'no') {
 	my $originalWidth = length($originalDate);
@@ -117,13 +125,17 @@ pod2usage(-exitval => 0, -verbose => 2) if $man;
 pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
 
 if (@ARGV == 1) {
-    my $file = $ARGV[0];
-    unless (-e $file) {
-	warn "$file does not exist!\n";
-	exit 1;
+    if ($ARGV[0] =~ /^[+-]?\d+$/) {
+	print timespanToReldate($ARGV[0]), "\n";
+    } else {
+	my $file = $ARGV[0];
+	unless (-e $file) {
+	    warn "$file does not exist!\n";
+	    exit 1;
+	}
+	my $age = $^T - (stat($file))[9];  # 9 = modtime
+	print timespanToReldate($age), "\n";
     }
-    my $age = $^T - (stat($file))[9];  # 9 = modtime
-    print ago($age, $precision), "\n";
 } else {
     while (<>) {
 	s/${datePattern}/$prefix . reldate(toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
