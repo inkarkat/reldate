@@ -12,6 +12,9 @@
 # REMARKS:
 #
 # REVISION	DATE		REMARKS
+#	004	30-Jul-2018	ENH: Allow to pass --timespan SECONDS as an
+#				alternative to FILE.
+#				Use --prefix and --suffix also for passed FILE.
 #	003	11-May-2018	ENH: Allow to handle UTC time in addition to
 #				local time. Add parsing for timezone and pass
 #				that to toEpoch(), which then uses either
@@ -107,6 +110,7 @@ sub reldate
 
 my $help = 0;
 my $man = 0;
+my $timespan;
 
 GetOptions(
     'help|h|?' => \$help,
@@ -117,25 +121,23 @@ GetOptions(
     'prefer-past' => \$isPreferPast,
     'prefer-future' => \$isPreferFuture,
     'prefix=s' => \$prefix,
-    'suffix=s' => \$suffix
-
+    'suffix=s' => \$suffix,
+    'timespan=i' => \$timespan,
 ) or pod2usage(2);
 pod2usage(-exitval => 0, -verbose => 0) if $help;
 pod2usage(-exitval => 0, -verbose => 2) if $man;
 pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
 
 if (@ARGV == 1) {
-    if ($ARGV[0] =~ /^[+-]?\d+$/) {
-	print timespanToReldate($ARGV[0]), "\n";
-    } else {
-	my $file = $ARGV[0];
-	unless (-e $file) {
-	    warn "$file does not exist!\n";
-	    exit 1;
-	}
-	my $age = $^T - (stat($file))[9];  # 9 = modtime
-	print timespanToReldate($age), "\n";
+    my $file = $ARGV[0];
+    unless (-e $file) {
+	warn "$file does not exist!\n";
+	exit 1;
     }
+    my $age = $^T - (stat($file))[9];  # 9 = modtime
+    print $prefix, timespanToReldate($age), $suffix, "\n";
+} elsif (defined $timespan) {
+    print $prefix, timespanToReldate($timespan), $suffix, "\n";
 } else {
     while (<>) {
 	s/${datePattern}/$prefix . reldate(toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
@@ -152,6 +154,7 @@ reldate - Show relative dates instead of absolute ones
 =head1 SYNOPSIS
 
  reldate [--date-pattern PATTERN] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--prefix STRING] [--suffix STRING]
+ reldate --timespan [+-]SECONDS
  reldate FILE
 
     Options:
@@ -162,6 +165,7 @@ reldate - Show relative dates instead of absolute ones
     --prefer-future		assume incomplete date is in future
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
+    --timespan SECONDS          convert SECONDS time difference to relative date
     -?|-h|--help		brief help message
     --man			full documentation
 
@@ -196,6 +200,10 @@ STRING to put before a recognized relative date. E.g. [ or ^[[01m.
 =item B<--suffix>
 
 STRING to put after a recognized relative date. E.g. ] or ^[[0m.
+
+=item B<--timespan>
+
+SECONDS of time difference to directly convert to a relative date. Negative SECONDS lie in the future.
 
 =item B<--help>, B<-h>, B<-?>
 
