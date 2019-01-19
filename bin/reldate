@@ -167,9 +167,24 @@ sub massageEach
     return $relativeDate;
 }
 
+sub reldateNormal
+{
+    my $string = shift;
+    $string =~ 	s/${datePattern}/$prefix . reldate(\@defaultMassages, $^T, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
+    return $string;
+}
+
+sub reldateBase
+{
+    my $string = shift;
+    $string =~ s/${datePattern}/deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
+    return $string;
+}
+
 sub reldateDelta
 {
     my $string = shift;
+# print "**** [$string]\n";
     my $count = 0;
     $string =~ s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
     return $string;
@@ -223,15 +238,15 @@ sub deltaReplacement
 
     my $replacement;
     if ($isRelativeBase) {
-	$replacement = $prefix . ($isFirst ?
-	    reldate(\@defaultMassages, $^T, $epoch, $originalDate) :
-	    reldate(\@massages, $baseEpoch, $epoch, $originalDate)
-	) . $suffix;
-    } else {
 	$replacement = ($isFirst ?
 	    $originalDate :
 	    $prefix . reldate(\@massages, $baseEpoch, $epoch, $originalDate) . $suffix
 	);
+    } else {
+	$replacement = $prefix . ($isFirst ?
+	    reldate(\@defaultMassages, $^T, $epoch, $originalDate) :
+	    reldate(\@massages, $baseEpoch, $epoch, $originalDate)
+	) . $suffix;
     }
 
     if ($isRecordBase) {
@@ -298,29 +313,31 @@ if (@ARGV == 1) {
     print $prefix, timespanToReldate(\@massages, $timespan), $suffix, "\n";
 } elsif (defined $epoch) {
     print $prefix, timespanToReldate(\@defaultMassages, $^T - $epoch), $suffix, "\n";
-} elsif (defined $baseEpoch) {
-    while (<>) {
-	s/${datePattern}/deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
-	print;
-    }
-} elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
-    my $splitPattern = qr/^.*$/;
+} else {
+    my $splitPattern = qr/^.*$/s;
     if (defined $reset) {
 	$/ = $reset;
-    } elsif ($within eq 'all') {
+    } elsif (($within // '') eq 'all') {
 	$/ = undef;
     }
-    if ($within ne 'all' and $within ne 'line') {
+    if (($within // '') eq 'line') {
+	$splitPattern = qr/^.*$/m;
+    } elsif (defined $within and $within ne 'all' and $within ne 'line') {
 	$splitPattern = $within;
     }
 
-    while (<>) {
-	s/${splitPattern}/reldateDelta($&)/ge;
-	print;
+    my $algorithm;
+    if (defined $baseEpoch) {
+	$algorithm = \&reldateBase;
+    } elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
+	$algorithm = \&reldateDelta;
+    } else {
+	$algorithm = \&reldateNormal;
     }
-} else {
+
+# print "**** [$splitPattern]\n";
     while (<>) {
-	s/${datePattern}/$prefix . reldate($^T, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
+	s/${splitPattern}/$algorithm->($&)/ges;
 	print;
     }
 }
@@ -333,7 +350,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|((--relative-to-first|--relative-each|--delta-to-first|--delta-each) (--within (line|PATTERN|all) |--reset RESET-PATTERN))] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--prefix STRING] [--suffix STRING]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--prefix STRING] [--suffix STRING]
  reldate [...] --timespan [+-]SECONDS
  reldate [...] --epoch EPOCH
  reldate [...] FILE
@@ -346,7 +363,7 @@ reldate - Show relative dates instead of absolute ones
     --relative-each             take the first date as an absolute base, then make all subsequent ones relative to the previous one
     --delta-to-first            with the first date as (also relative) base, make all subsequent ones relative to that
     --delta-each                make all subsequent dates relative to the previous one
-    --within (line|PATTERN|all) ... first date each line / in text matching PATTERN (within a line) / entire input
+    --within (line|PATTERN|all) ... first date each line / in text matching PATTERN (within a line / the block delimited by RESET-PATTERN) / entire input
     --reset RESET-PATTERN       ... until RESET-PATTERN matches again
     --keep-width		maintain width of replaced date
     --precision N		max number of time units used
@@ -370,6 +387,26 @@ Parse any match of PATTERN as a date.
 
  \b(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)T(?<hours>\d\d):(?<minutes>\d\d):(?<seconds>\d\d)(?<timezone>Z)\b
  \b(?<year>\d\d\d\d)(?<month>\d\d)(?<day>\d\d)\b
+
+=item B<--relative-to>, B<--relative-to-epoch>
+
+Relate dates to passed BASE-DATE (also parsed according to C<--date-pattern>) or BASE-EPOCH instead of comparing to the current date. Relative dates will refer to I<it> and I<at the same time> instead of now.
+
+=item B<--relative-to-first>
+
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed as-is, and taken as the base for the rest of the block. All subsequent dates refer to that first one with the subject I<it>.
+
+=item B<--relative-each>
+
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed as-is. Each following date is made relative to the preceding one, which is referred to as I<that>.
+
+=item B<--delta-to-first>
+
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is taken as the base for the rest of the block. All subsequent dates refer to that first one with the subject I<it>.
+
+=item B<--delta-each>
+
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed as-is. Each following date is made relative to the preceding one, which is referred to as I<that>.
 
 =item B<--keep-width>
 
