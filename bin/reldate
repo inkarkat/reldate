@@ -60,6 +60,8 @@ my $isRelativeToFirst = 0;
 my $isRelativeEach = 0;
 my $isDeltaToFirst = 0;
 my $isDeltaEach = 0;
+my $now = $^T;
+my $baseEpoch;
 
 sub numericalMonth
 {
@@ -82,7 +84,6 @@ sub toEpoch
 
     my $epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year));
 
-    my $now = $^T;
     if (! defined($year) && $isPreferPast && $now - $epoch < 0) {
 	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year - 1));
     } elsif (! defined($year) && $isPreferFuture && $now - $epoch > 0) {
@@ -101,7 +102,7 @@ sub massageWeekdays
     my $isPast = ($2 eq "ago");
     my $isAdjacentWeekDay = ($1 <= 7);
 
-    my $weekDay = ((localtime)[6] + 7 + ($isPast ? -1 : 1) * $1) % 7;
+    my $weekDay = ((localtime($now))[6] + 7 + ($isPast ? -1 : 1) * $1) % 7;
     my $weekDayName = qw(
 	Sunday
 	Monday
@@ -170,7 +171,7 @@ sub massageEach
 sub reldateNormal
 {
     my $string = shift;
-    $string =~ 	s/${datePattern}/$prefix . reldate(\@defaultMassages, $^T, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
+    $string =~ 	s/${datePattern}/$prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
     return $string;
 }
 
@@ -218,7 +219,6 @@ sub reldate
     return $relativeDate;
 }
 
-my $baseEpoch;
 sub deltaReplacement
 {
     my $count = shift;
@@ -244,7 +244,7 @@ sub deltaReplacement
 	);
     } else {
 	$replacement = $prefix . ($isFirst ?
-	    reldate(\@defaultMassages, $^T, $epoch, $originalDate) :
+	    reldate(\@defaultMassages, $now, $epoch, $originalDate) :
 	    reldate(\@massages, $baseEpoch, $epoch, $originalDate)
 	) . $suffix;
     }
@@ -292,12 +292,12 @@ pod2usage(-exitval => 0, -verbose => 2) if $man;
 pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
 
 if (defined $relativeToDate) {
-    unless (($baseEpoch = $relativeToDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
+    unless (($now = $relativeToDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
 	warn "$relativeToDate is not a valid BASE-DATE!\n";
 	exit 2;
     }
 } elsif (defined $relativeToEpoch) {
-    $baseEpoch = $relativeToEpoch;
+    $now = $relativeToEpoch;
 }
 
 if (@ARGV == 1) {
@@ -306,13 +306,13 @@ if (@ARGV == 1) {
 	warn "$file does not exist!\n";
 	exit 1;
     }
-    my $age = $^T - (stat($file))[9];  # 9 = modtime
+    my $age = $now - (stat($file))[9];  # 9 = modtime
     print $prefix, timespanToReldate(\@defaultMassages, $age), $suffix, "\n";
 } elsif (defined $timespan) {
     my @massages = ($timespan =~ /^[+-]/ ? @defaultMassages : (\&massageWeekdays, \&massageForShortTimespan));
     print $prefix, timespanToReldate(\@massages, $timespan), $suffix, "\n";
 } elsif (defined $epoch) {
-    print $prefix, timespanToReldate(\@defaultMassages, $^T - $epoch), $suffix, "\n";
+    print $prefix, timespanToReldate(\@defaultMassages, $now - $epoch), $suffix, "\n";
 } else {
     my $splitPattern = qr/^.*$/s;
     if (defined $reset) {
@@ -327,7 +327,8 @@ if (@ARGV == 1) {
     }
 
     my $algorithm;
-    if (defined $baseEpoch) {
+    if (defined $relativeToDate or defined $relativeToEpoch) {
+	$baseEpoch = $now;
 	$algorithm = \&reldateBase;
     } elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
 	$algorithm = \&reldateDelta;
@@ -390,7 +391,9 @@ Parse any match of PATTERN as a date.
 
 =item B<--relative-to>, B<--relative-to-epoch>
 
-Relate dates to passed BASE-DATE (also parsed according to C<--date-pattern>) or BASE-EPOCH instead of comparing to the current date. Relative dates will refer to I<it> and I<at the same time> instead of now.
+Relate dates to passed BASE-DATE (also parsed according to C<--date-pattern>) or BASE-EPOCH instead of comparing to the current date. Relative dates will refer to I<it> and I<at the same time> instead of now (except when used together with C<--delta-to-first>, where I<it> will refer to the first date).
+
+Also works for C<--epoch> and C<FILE>.
 
 =item B<--relative-to-first>
 
@@ -406,7 +409,17 @@ Within the parsed block (cp. C<--within> and C<--reset>), the first found date i
 
 =item B<--delta-each>
 
-Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed as-is. Each following date is made relative to the preceding one, which is referred to as I<that>.
+Within the parsed block (cp. C<--within> and C<--reset>), each date is made relative to the preceding one, which is referred to as I<that>.
+
+=item B<--within>
+
+Specifies what I<first> represents for C<--relative-to-first>, C<--relative-each> (kept absolute), C<--delta-to-first>, C<--delta-each> (make relative to the base date). For the normal processing, PATTERN can limit where translation of absolute to relative dates happens.
+
+The default scope is individual lines, or ranges delimited by RESET-PATTERN. In the latter case, C<line> explicitly switches back to first in each line. C<all> reads the entire input as one big record, so the first date really only is the very first one.
+
+=item B<--reset>
+
+Separator pattern (unanchored) that makes up ranges where C<--within> is then applied. By default, individual lines are processed.
 
 =item B<--keep-width>
 
