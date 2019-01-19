@@ -140,13 +140,24 @@ sub massageForShortTimespan
     return $relativeDate;
 }
 
-sub massageDelta
+sub massageToFirst
 {
     my $relativeDate = shift;
 
     $relativeDate = 'at the same time' if ($relativeDate eq 'right now');
-    $relativeDate =~ s/(.*) ago$/$1 before/;
-    $relativeDate =~ s/(.*) from now$/$1 later/;
+    $relativeDate =~ s/(.*) ago$/$1 before it/;
+    $relativeDate =~ s/(.*) from now$/$1 later than it/;
+
+    return $relativeDate;
+}
+
+sub massageEach
+{
+    my $relativeDate = shift;
+
+    $relativeDate = 'at the same time' if ($relativeDate eq 'right now');
+    $relativeDate =~ s/(.*) ago$/$1 before that/;
+    $relativeDate =~ s/(.*) from now$/$1 later than that/;
 
     return $relativeDate;
 }
@@ -185,10 +196,11 @@ sub deltaReplacement
     my $count = shift;
     my $epoch = shift;
     my $originalDate = shift;
-    my @massages = (\&massageDelta);
 
+    my $isEach = ($isRelativeEach or $isDeltaEach);
+    my @massages = ($isEach ? \&massageEach : \&massageToFirst);
     my $isFirst = ($count == 0);
-    my $isRecordBase = ($isRelativeEach or $isDeltaEach ? 1 : $isFirst);
+    my $isRecordBase = ($isEach ? 1 : $isFirst);
     my $isRelativeBase = ($isRelativeToFirst or $isRelativeEach);
 
     my $replacement;
