@@ -40,13 +40,22 @@ use Time::Piece;
 my @monthsShort = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
 my @monthsLong = qw/January February March April May June July August September October November December/;
 my $monthsExpr = join('|', @monthsShort, @monthsLong);
-my $datePattern = qr/\b(?<day>\d\d)-(?<month>(?:\d\d|${monthsExpr}))-(?<year>\d\d\d\d)(?: (?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d))?)?\b|\b(?<month>${monthsExpr})\s+(?<day>\d{1,2})\s+(?:(?<year>\d\d\d\d)|(?<hours>\d\d):(?<minutes>\d\d))\b|\b(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)T(?<hours>\d\d):(?<minutes>\d\d):(?<seconds>\d\d)(?<timezone>Z)\b/;
+my $datePattern = join('|', (
+	qr/\b(?<year>\d\d\d\d)(?<month>[01]\d)(?<day>[0123]\d)(?:[ _-](?<hours>[012]\d)(?<minutes>[0-5]\d)(?<seconds>[0-5]\d)?)?\b/,
+	qr/\b(?<year>\d\d\d\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<day>[0123]\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
+	qr/\b(?<day>[0123]\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<year>\d\d\d\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
+	qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d),?\s+(?:(?<year>\d\d\d\d)\s+)?(?:(?<hours>[012]\d):(?<minutes>[0-5]\d))\b/,
+	qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d)(?:,?\s+(?<year>\d\d\d\d))\b/,
+	qr/\b(?<year>\d\d\d\d)-(?<month>[01]\d)-(?<day>[0123]\d)T(?<hours>[012]\d):(?<minutes>[0-5]\d):(?<seconds>[0-5]\d)(?<timezone>Z)\b/)
+);
 my $keepWidth = 'no';
 my $precision = 1;
 my $isPreferPast = 0;
 my $isPreferFuture = 0;
+my $isWithWeekday = 0;
 my $prefix = '';
 my $suffix = '';
+my $massage = \&massageFull;
 
 sub numericalMonth
 {
@@ -79,10 +88,33 @@ sub toEpoch
     return $epoch;
 }
 
-sub timespanToReldate
+sub massageWeekdays
 {
-    my $timespan = shift;
-    my $relativeDate= ago($timespan, $precision);
+    my $relativeDate = shift;
+    return $relativeDate unless ($isWithWeekday);
+    return $relativeDate unless ($relativeDate =~ /^(\d+) days? (ago|from now)$/);
+
+    my $isPast = ($2 eq "ago");
+    my $isAdjacentWeekDay = ($1 <= 7);
+
+    my $weekDay = ((localtime)[6] + 7 + ($isPast ? -1 : 1) * $1) % 7;
+    my $weekDayName = qw(
+	Sunday
+	Monday
+	Tuesday
+	Wednesday
+	Thursday
+	Friday
+	Saturday
+    )[$weekDay];
+    return ($isAdjacentWeekDay ?
+	($isPast ? "the previous " : "coming ") . $weekDayName :
+	"$relativeDate (a $weekDayName)"
+    );
+}
+sub massageFull
+{
+    my $relativeDate = shift;
 
     # Massage the output from Time::Duration to make it more amenable to my
     # preferences.
@@ -92,6 +124,22 @@ sub timespanToReldate
     $relativeDate =~ s/(.*) from now$/in $1/;
 
     return $relativeDate;
+}
+
+sub massageForShortTimespan
+{
+    my $relativeDate = shift;
+
+    $relativeDate = 'just now' if ($relativeDate eq 'right now');
+    $relativeDate =~ s/ from now$| ago$//;
+
+    return $relativeDate;
+}
+
+sub timespanToReldate
+{
+    my $timespan = shift;
+    return $massage->(massageWeekdays(ago($timespan, $precision)));
 }
 
 sub reldate
@@ -121,9 +169,10 @@ GetOptions(
     'precision=i' => \$precision,
     'prefer-past' => \$isPreferPast,
     'prefer-future' => \$isPreferFuture,
+    'with-weekday' => \$isWithWeekday,
     'prefix=s' => \$prefix,
     'suffix=s' => \$suffix,
-    'timespan=i' => \$timespan,
+    'timespan=s' => \$timespan,
     'epoch=i' => \$epoch,
 ) or pod2usage(2);
 pod2usage(-exitval => 0, -verbose => 0) if $help;
@@ -139,6 +188,7 @@ if (@ARGV == 1) {
     my $age = $^T - (stat($file))[9];  # 9 = modtime
     print $prefix, timespanToReldate($age), $suffix, "\n";
 } elsif (defined $timespan) {
+    $massage = \&massageForShortTimespan unless ($timespan =~ /^[+-]/);
     print $prefix, timespanToReldate($timespan), $suffix, "\n";
 } elsif (defined $epoch) {
     print $prefix, timespanToReldate($^T - $epoch), $suffix, "\n";
@@ -157,10 +207,10 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- reldate [--date-pattern PATTERN] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--prefix STRING] [--suffix STRING]
- reldate --timespan [+-]SECONDS
- reldate --epoch EPOCH
- reldate FILE
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--prefix STRING] [--suffix STRING]
+ reldate [...] --timespan [+-]SECONDS
+ reldate [...] --epoch EPOCH
+ reldate [...] FILE
 
     Options:
     --date-pattern PATTERN	parse PATTERN as a date
@@ -168,9 +218,10 @@ reldate - Show relative dates instead of absolute ones
     --precision N		max number of time units used
     --prefer-past		assume incomplete date is in past
     --prefer-future		assume incomplete date is in future
+    --with-weekday		use "coming/the previous Monday" instead of "in two days /ago"
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
-    --timespan SECONDS          convert SECONDS time difference to relative date
+    --timespan [+-]SECONDS      convert SECONDS difference to relative date
     --epoch EPOCH               convert EPOCH seconds to relative date
     -?|-h|--help		brief help message
     --man			full documentation
@@ -182,6 +233,9 @@ reldate - Show relative dates instead of absolute ones
 =item B<--date-pattern>
 
 Parse any match of PATTERN as a date.
+
+ \b(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)T(?<hours>\d\d):(?<minutes>\d\d):(?<seconds>\d\d)(?<timezone>Z)\b
+ \b(?<year>\d\d\d\d)(?<month>\d\d)(?<day>\d\d)\b
 
 =item B<--keep-width>
 
@@ -199,6 +253,10 @@ If an incomplete date specification (e.g. without a year) is parsed, assume that
 
 If an incomplete date specification (e.g. without a year) is parsed, assume that the date is in the future.
 
+=item B<--with-weekday>
+
+For days that are within 7 days, use "coming/the previous Monday" instead of "in two days /ago". For days that are longer in the future or past, append the weekday to the relative date.
+
 =item B<--prefix>
 
 STRING to put before a recognized relative date. E.g. [ or ^[[01m.
@@ -211,7 +269,9 @@ STRING to put after a recognized relative date. E.g. ] or ^[[0m.
 
 SECONDS of time difference to directly convert to a relative date. Negative SECONDS lie in the future.
 
-=item B<--timespan>
+Without a [+-] sign, prints a neutral representation (e.g. I<16 minutes> instead of I<16 minutes ago>).
+
+=item B<--epoch>
 
 Convert EPOCH seconds since the epoch (1970-01-01 UTC) to relative date.
 
