@@ -167,6 +167,14 @@ sub massageEach
     return $relativeDate;
 }
 
+sub reldateDelta
+{
+    my $string = shift;
+    my $count = 0;
+    $string =~ s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
+    return $string;
+}
+
 sub timespanToReldate
 {
     my $massagesRef = shift;
@@ -215,14 +223,14 @@ sub deltaReplacement
 
     my $replacement;
     if ($isRelativeBase) {
-	$replacement = ($isFirst ?
+	$replacement = $prefix . ($isFirst ?
 	    reldate(\@defaultMassages, $^T, $epoch, $originalDate) :
 	    reldate(\@massages, $baseEpoch, $epoch, $originalDate)
-	);
+	) . $suffix;
     } else {
 	$replacement = ($isFirst ?
 	    $originalDate :
-	    reldate(\@massages, $baseEpoch, $epoch, $originalDate)
+	    $prefix . reldate(\@massages, $baseEpoch, $epoch, $originalDate) . $suffix
 	);
     }
 
@@ -296,18 +304,18 @@ if (@ARGV == 1) {
 	print;
     }
 } elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
-    my $splitPattern;
+    my $splitPattern = qr/^.*$/;
     if (defined $reset) {
 	$/ = $reset;
     } elsif ($within eq 'all') {
 	$/ = undef;
-    } elsif ($within ne 'line') {
-	my $splitPattern = $within;
+    }
+    if ($within ne 'all' and $within ne 'line') {
+	$splitPattern = $within;
     }
 
     while (<>) {
-	my $count = 0;
-	s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
+	s/${splitPattern}/reldateDelta($&)/ge;
 	print;
     }
 } else {
