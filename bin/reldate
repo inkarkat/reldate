@@ -272,6 +272,7 @@ my $hasDifferentBase = 0;
 sub process
 {
     my $argumentsRef = shift;
+    my $inputHandleRef = shift;
 
     if (@$argumentsRef == 1 && ! $isDoubleDash) {
 	my $file = @$argumentsRef[0];
@@ -309,7 +310,7 @@ sub process
 	    $algorithm = \&reldateNormal;
 	}
 
-	while (<>) {
+	while (readline($inputHandleRef)) {
 	    # Update the current time for each record, to accommodate long-running
 	    # parsing.
 	    $now = $^T unless $hasDifferentBase;
@@ -367,7 +368,7 @@ sub run
 	$hasDifferentBase = 1;
     }
 
-    process(\@ARGV);
+    process(\@ARGV, \*ARGV);
 }
 
 run();
