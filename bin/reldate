@@ -262,98 +262,110 @@ sub deltaReplacement
     return $replacement;
 }
 
-my $help = 0;
-my $man = 0;
 my $timespan;
 my $epoch;
 my $within;
 my $reset;
-my $relativeToDate;
-my $relativeToEpoch;
-
-GetOptions(
-    'help|h|?' => \$help,
-    'man' => \$man,
-    'date-pattern=s' => \$datePattern,
-    'relative-to=s' => \$relativeToDate,
-    'relative-to-epoch=i' => \$relativeToEpoch,
-    'relative-to-first' => \$isRelativeToFirst,
-    'relative-each' => \$isRelativeEach,
-    'delta-to-first' => \$isDeltaToFirst,
-    'delta-each' => \$isDeltaEach,
-    'within=s' => \$within,
-    'reset=s' => \$reset,
-    'keep-width:s' => \$keepWidth,
-    'precision=i' => \$precision,
-    'prefer-past' => \$isPreferPast,
-    'prefer-future' => \$isPreferFuture,
-    'with-weekday' => \$isWithWeekday,
-    'prefix=s' => \$prefix,
-    'suffix=s' => \$suffix,
-    'timespan=s' => \$timespan,
-    'epoch=i' => \$epoch,
-) or pod2usage(2);
-pod2usage(-exitval => 0, -verbose => 0) if $help;
-pod2usage(-exitval => 0, -verbose => 2) if $man;
-pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
-
 my $hasDifferentBase = 0;
-if (defined $relativeToDate) {
-    unless (($now = $relativeToDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
-	warn "$relativeToDate is not a valid BASE-DATE!\n";
-	exit 2;
-    }
-    $hasDifferentBase = 1;
-} elsif (defined $relativeToEpoch) {
-    $now = $relativeToEpoch;
-    $hasDifferentBase = 1;
-}
 
-if (@ARGV == 1) {
-    my $file = $ARGV[0];
-    unless (-e $file) {
-	warn "$file does not exist!\n";
-	exit 1;
-    }
-    my $age = $now - (stat($file))[9];  # 9 = modtime
-    print $prefix, timespanToReldate(\@defaultMassages, $age), $suffix, "\n";
-} elsif (defined $timespan) {
-    my @massages = ($timespan =~ /^[+-]/ ? @defaultMassages : (\&massageWeekdays, \&massageForShortTimespan));
-    print $prefix, timespanToReldate(\@massages, $timespan), $suffix, "\n";
-} elsif (defined $epoch) {
-    print $prefix, timespanToReldate(\@defaultMassages, $now - $epoch), $suffix, "\n";
-} else {
-    my $splitPattern = qr/^.*$/s;
-    if (defined $reset) {
-	$/ = $reset;
-    } elsif (($within // '') eq 'all') {
-	$/ = undef;
-    }
-    if (($within // '') eq 'line') {
-	$splitPattern = qr/^.*$/m;
-    } elsif (defined $within and $within ne 'all' and $within ne 'line') {
-	$splitPattern = $within;
-    }
-
-    my $algorithm;
-    if ($hasDifferentBase) {
-	$baseEpoch = $now;
-	$algorithm = \&reldateBase;
-    } elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
-	$algorithm = \&reldateDelta;
+sub process
+{
+    if (@ARGV == 1) {
+	my $file = $ARGV[0];
+	unless (-e $file) {
+	    warn "$file does not exist!\n";
+	    exit 1;
+	}
+	my $age = $now - (stat($file))[9];  # 9 = modtime
+	print $prefix, timespanToReldate(\@defaultMassages, $age), $suffix, "\n";
+    } elsif (defined $timespan) {
+	my @massages = ($timespan =~ /^[+-]/ ? @defaultMassages : (\&massageWeekdays, \&massageForShortTimespan));
+	print $prefix, timespanToReldate(\@massages, $timespan), $suffix, "\n";
+    } elsif (defined $epoch) {
+	print $prefix, timespanToReldate(\@defaultMassages, $now - $epoch), $suffix, "\n";
     } else {
-	$algorithm = \&reldateNormal;
-    }
+	my $splitPattern = qr/^.*$/s;
+	if (defined $reset) {
+	    $/ = $reset;
+	} elsif (($within // '') eq 'all') {
+	    $/ = undef;
+	}
+	if (($within // '') eq 'line') {
+	    $splitPattern = qr/^.*$/m;
+	} elsif (defined $within and $within ne 'all' and $within ne 'line') {
+	    $splitPattern = $within;
+	}
 
-    while (<>) {
-	# Update the current time for each record, to accommodate long-running
-	# parsing.
-	$now = $^T unless $hasDifferentBase;
+	my $algorithm;
+	if ($hasDifferentBase) {
+	    $baseEpoch = $now;
+	    $algorithm = \&reldateBase;
+	} elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
+	    $algorithm = \&reldateDelta;
+	} else {
+	    $algorithm = \&reldateNormal;
+	}
 
-	s/${splitPattern}/$algorithm->($&)/ges;
-	print;
+	while (<>) {
+	    # Update the current time for each record, to accommodate long-running
+	    # parsing.
+	    $now = $^T unless $hasDifferentBase;
+
+	    s/${splitPattern}/$algorithm->($&)/ges;
+	    print;
+	}
     }
 }
+
+
+sub run
+{
+    my $help = 0;
+    my $man = 0;
+    my $relativeToDate;
+    my $relativeToEpoch;
+
+    GetOptions(
+	'help|h|?' => \$help,
+	'man' => \$man,
+	'date-pattern=s' => \$datePattern,
+	'relative-to=s' => \$relativeToDate,
+	'relative-to-epoch=i' => \$relativeToEpoch,
+	'relative-to-first' => \$isRelativeToFirst,
+	'relative-each' => \$isRelativeEach,
+	'delta-to-first' => \$isDeltaToFirst,
+	'delta-each' => \$isDeltaEach,
+	'within=s' => \$within,
+	'reset=s' => \$reset,
+	'keep-width:s' => \$keepWidth,
+	'precision=i' => \$precision,
+	'prefer-past' => \$isPreferPast,
+	'prefer-future' => \$isPreferFuture,
+	'with-weekday' => \$isWithWeekday,
+	'prefix=s' => \$prefix,
+	'suffix=s' => \$suffix,
+	'timespan=s' => \$timespan,
+	'epoch=i' => \$epoch,
+    ) or pod2usage(2);
+    pod2usage(-exitval => 0, -verbose => 0) if $help;
+    pod2usage(-exitval => 0, -verbose => 2) if $man;
+    pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
+
+    if (defined $relativeToDate) {
+	unless (($now = $relativeToDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
+	    warn "$relativeToDate is not a valid BASE-DATE!\n";
+	    exit 2;
+	}
+	$hasDifferentBase = 1;
+    } elsif (defined $relativeToEpoch) {
+	$now = $relativeToEpoch;
+	$hasDifferentBase = 1;
+    }
+
+    process(\@ARGV);
+}
+
+run();
 
 __END__
 
