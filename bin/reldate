@@ -40,7 +40,7 @@ package Local::Reldate;
 
 use List::Util qw(first);
 use Modern::Perl;
-use Getopt::Long;
+use Getopt::Long qw(GetOptionsFromArray);
 use Pod::Usage;
 use Time::Duration;
 use Time::Local;
@@ -71,8 +71,7 @@ my $isEach = 0;
 my $now = $^T;
 my $baseEpoch;
 
-sub numericalMonth
-{
+sub numericalMonth {
     my $month = shift;
     return $month - 1 if $month =~ m/^\d+$/;
 
@@ -85,8 +84,7 @@ sub numericalMonth
     die "Should have parsed month";
 }
 
-sub toEpoch
-{
+sub toEpoch {
     my ($seconds, $minutes, $hours, $day, $month, $year, $timezone) = @_;
     my $timeConverter = ($timezone ? \&timegm : \&timelocal);
 
@@ -101,8 +99,7 @@ sub toEpoch
     return $epoch;
 }
 
-sub massageWeekdays
-{
+sub massageWeekdays {
     my $relativeDate = shift;
     return $relativeDate unless ($isWithWeekday);
     return $relativeDate unless ($relativeDate =~ /^(\d+) days? (ago|from now)$/);
@@ -125,8 +122,7 @@ sub massageWeekdays
 	"$relativeDate (a $weekDayName)"
     );
 }
-sub massageFull
-{
+sub massageFull {
     my $relativeDate = shift;
 
     # Massage the output from Time::Duration to make it more amenable to my
@@ -139,8 +135,7 @@ sub massageFull
     return $relativeDate;
 }
 
-sub massageForShortTimespan
-{
+sub massageForShortTimespan {
     my $relativeDate = shift;
 
     $relativeDate = 'just now' if ($relativeDate eq 'right now');
@@ -149,8 +144,7 @@ sub massageForShortTimespan
     return $relativeDate;
 }
 
-sub massageToFirst
-{
+sub massageToFirst {
     my $relativeDate = shift;
 
     $relativeDate = 'at the same time' if ($relativeDate eq 'right now');
@@ -160,13 +154,11 @@ sub massageToFirst
     return $relativeDate;
 }
 
-sub massageToFirstAgain
-{
+sub massageToFirstAgain {
     return 'also ' . massageToFirst(@_);
 }
 
-sub massageEach
-{
+sub massageEach {
     my $relativeDate = shift;
 
     $relativeDate = 'at that time' if ($relativeDate eq 'right now');
@@ -176,30 +168,26 @@ sub massageEach
     return $relativeDate;
 }
 
-sub reldateNormal
-{
+sub reldateNormal {
     my $string = shift;
     $string =~ 	s/${datePattern}/$prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
     return $string;
 }
 
-sub reldateBase
-{
+sub reldateBase {
     my $string = shift;
     $string =~ s/${datePattern}/deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
     return $string;
 }
 
-sub reldateDelta
-{
+sub reldateDelta {
     my $string = shift;
     my $count = 0;
     $string =~ s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
     return $string;
 }
 
-sub timespanToReldate
-{
+sub timespanToReldate {
     my $massagesRef = shift;
     my $timespan = shift;
     my $reldate = ago($timespan, $precision);
@@ -210,12 +198,8 @@ sub timespanToReldate
     return $reldate;
 }
 
-sub reldate
-{
-    my $massagesRef = shift;
-    my $referenceEpoch = shift;
-    my $parsedEpoch = shift;
-    my $originalDate = shift;
+sub reldate {
+    my ($massagesRef, $referenceEpoch, $parsedEpoch, $originalDate) = @_;
     my $relativeDate = timespanToReldate($massagesRef, $referenceEpoch - $parsedEpoch);
 
     if ($keepWidth ne 'no') {
@@ -226,11 +210,8 @@ sub reldate
     return $relativeDate;
 }
 
-sub deltaReplacement
-{
-    my $count = shift;
-    my $epoch = shift;
-    my $originalDate = shift;
+sub deltaReplacement {
+    my ($count, $epoch, $originalDate) = @_;
 
     my @massages = ($isEach ?
 	\&massageEach :
@@ -268,10 +249,8 @@ my $within;
 my $reset;
 my $hasDifferentBase = 0;
 
-sub process
-{
-    my $argumentsRef = shift;
-    my $inputHandleRef = shift;
+sub process {
+    my ($argumentsRef, $inputHandleRef) = @_;
 
     if (@$argumentsRef == 1 && ! $isDoubleDash) {
 	my $file = @$argumentsRef[0];
@@ -321,14 +300,15 @@ sub process
 }
 
 
-sub run
-{
+sub run {
+    my ($class, $argumentsRef, $inputHandleRef) = @_;
+
     my $help = 0;
     my $man = 0;
 
-    $isDoubleDash = grep(/^--$/, @ARGV);	# Need to check this before Getopt::Long swallows the -- separator.
+    $isDoubleDash = grep(/^--$/, @$argumentsRef);	# Need to check this before Getopt::Long swallows the -- separator.
 
-    GetOptions(
+    GetOptionsFromArray($argumentsRef,
 	'help|h|?' => \$help,
 	'man' => \$man,
 	'date-pattern=s' => \$datePattern,
@@ -376,10 +356,10 @@ sub run
     pod2usage(-exitval => 0, -verbose => 2) if $man;
     pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
 
-    process(\@ARGV, \*ARGV);
+    process($argumentsRef, $inputHandleRef);
 }
 
-__PACKAGE__->run() unless caller();
+__PACKAGE__->run(\@ARGV, \*ARGV) unless caller();
 
 __END__
 
