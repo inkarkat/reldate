@@ -36,6 +36,8 @@
 # @(#)reldate	003	(11-May-2018)	tools
 ###############################################################################
 
+package Local::Reldate;
+
 use List::Util qw(first);
 use Modern::Perl;
 use Getopt::Long;
@@ -371,7 +373,7 @@ sub run
     process(\@ARGV, \*ARGV);
 }
 
-run();
+__PACKAGE__->run() unless caller();
 
 __END__
 
