@@ -65,10 +65,9 @@ my $isWithWeekday = 0;
 my $prefix = '';
 my $suffix = '';
 my @defaultMassages = (\&massageWeekdays, \&massageFull);
-my $isRelativeToFirst = 0;
-my $isRelativeEach = 0;
-my $isDeltaToFirst = 0;
-my $isDeltaEach = 0;
+my $isRelative = 0;
+my $isDelta = 0;
+my $isEach = 0;
 my $now = $^T;
 my $baseEpoch;
 
@@ -233,7 +232,6 @@ sub deltaReplacement
     my $epoch = shift;
     my $originalDate = shift;
 
-    my $isEach = ($isRelativeEach or $isDeltaEach);
     my @massages = ($isEach ?
 	\&massageEach :
 	($count == 1) ?
@@ -242,10 +240,9 @@ sub deltaReplacement
     );
     my $isFirst = ($count == 0);
     my $isRecordBase = ($isEach ? 1 : $isFirst);
-    my $isRelativeBase = ($isRelativeToFirst or $isRelativeEach);
 
     my $replacement;
-    if ($isRelativeBase) {
+    if ($isRelative) {
 	$replacement = ($isFirst ?
 	    $originalDate :
 	    $prefix . reldate(\@massages, $baseEpoch, $epoch, $originalDate) . $suffix
@@ -306,7 +303,7 @@ sub process
 	if ($hasDifferentBase) {
 	    $baseEpoch = $now;
 	    $algorithm = \&reldateBase;
-	} elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
+	} elsif ($isRelative or $isDelta) {
 	    $algorithm = \&reldateDelta;
 	} else {
 	    $algorithm = \&reldateNormal;
@@ -347,10 +344,22 @@ sub run
 	    $now = $_[1];
 	    $hasDifferentBase = 1;
 	},
-	'relative-to-first' => \$isRelativeToFirst,
-	'relative-each' => \$isRelativeEach,
-	'delta-to-first' => \$isDeltaToFirst,
-	'delta-each' => \$isDeltaEach,
+	'relative-to-first' => sub {
+	    $isRelative = 1;
+	    $isEach = 0;
+	},
+	'relative-each' =>  sub {
+	    $isRelative = 1;
+	    $isEach = 1;
+	},
+	'delta-to-first' => sub {
+	    $isDelta = 1;
+	    $isEach = 0;
+	},
+	'delta-each' => sub {
+	    $isDelta = 1;
+	    $isEach = 1;
+	},
 	'within=s' => \$within,
 	'reset=s' => \$reset,
 	'keep-width:s' => \$keepWidth,
