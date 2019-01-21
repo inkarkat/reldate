@@ -328,8 +328,6 @@ sub run
 {
     my $help = 0;
     my $man = 0;
-    my $relativeToDate;
-    my $relativeToEpoch;
 
     $isDoubleDash = grep(/^--$/, @ARGV);	# Need to check this before Getopt::Long swallows the -- separator.
 
@@ -337,8 +335,18 @@ sub run
 	'help|h|?' => \$help,
 	'man' => \$man,
 	'date-pattern=s' => \$datePattern,
-	'relative-to=s' => \$relativeToDate,
-	'relative-to-epoch=i' => \$relativeToEpoch,
+	'relative-to=s' => sub {
+	    my $baseDate = $_[1];
+	    unless (($now = $baseDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
+		warn "$baseDate is not a valid BASE-DATE!\n";
+		exit 2;
+	    }
+	    $hasDifferentBase = 1;
+	},
+	'relative-to-epoch=i' => sub {
+	    $now = $_[1];
+	    $hasDifferentBase = 1;
+	},
 	'relative-to-first' => \$isRelativeToFirst,
 	'relative-each' => \$isRelativeEach,
 	'delta-to-first' => \$isDeltaToFirst,
@@ -358,17 +366,6 @@ sub run
     pod2usage(-exitval => 0, -verbose => 0) if $help;
     pod2usage(-exitval => 0, -verbose => 2) if $man;
     pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
-
-    if (defined $relativeToDate) {
-	unless (($now = $relativeToDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
-	    warn "$relativeToDate is not a valid BASE-DATE!\n";
-	    exit 2;
-	}
-	$hasDifferentBase = 1;
-    } elsif (defined $relativeToEpoch) {
-	$now = $relativeToEpoch;
-	$hasDifferentBase = 1;
-    }
 
     process(\@ARGV, \*ARGV);
 }
