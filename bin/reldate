@@ -262,6 +262,7 @@ sub deltaReplacement
     return $replacement;
 }
 
+my $isDoubleDash = 0;
 my $timespan;
 my $epoch;
 my $within;
@@ -270,8 +271,10 @@ my $hasDifferentBase = 0;
 
 sub process
 {
-    if (@ARGV == 1) {
-	my $file = $ARGV[0];
+    my $argumentsRef = shift;
+
+    if (@$argumentsRef == 1 && ! $isDoubleDash) {
+	my $file = @$argumentsRef[0];
 	unless (-e $file) {
 	    warn "$file does not exist!\n";
 	    exit 1;
@@ -325,6 +328,8 @@ sub run
     my $relativeToDate;
     my $relativeToEpoch;
 
+    $isDoubleDash = grep(/^--$/, @ARGV);	# Need to check this before Getopt::Long swallows the -- separator.
+
     GetOptions(
 	'help|h|?' => \$help,
 	'man' => \$man,
@@ -376,6 +381,7 @@ reldate - Show relative dates instead of absolute ones
 =head1 SYNOPSIS
 
  echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--prefix STRING] [--suffix STRING]
+ reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
  reldate [...] --timespan [+-]SECONDS
  reldate [...] --epoch EPOCH
  reldate [...] FILE
