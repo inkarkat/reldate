@@ -12,6 +12,13 @@
 # REMARKS:
 #
 # REVISION	DATE		REMARKS
+#	005	20-Jan-2019	ENH: Add options for differences to the first /
+#				preceding timestamp, to give delta information.
+#				ENH: Generalize line-based processing to be able
+#				to read arbitrary blocks (for the notion of
+#				"first" date in delta detection).
+#				ENH: Allow to do parsing only within certain
+#				pattern matches.
 #	004	30-Jul-2018	ENH: Allow to pass --timespan SECONDS and
 #				--epoch EPOCH as alternatives to FILE.
 #				Use --prefix and --suffix also for passed FILE.
@@ -185,7 +192,6 @@ sub reldateBase
 sub reldateDelta
 {
     my $string = shift;
-# print "**** [$string]\n";
     my $count = 0;
     $string =~ s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
     return $string;
@@ -291,13 +297,16 @@ pod2usage(-exitval => 0, -verbose => 0) if $help;
 pod2usage(-exitval => 0, -verbose => 2) if $man;
 pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
 
+my $hasDifferentBase = 0;
 if (defined $relativeToDate) {
     unless (($now = $relativeToDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
 	warn "$relativeToDate is not a valid BASE-DATE!\n";
 	exit 2;
     }
+    $hasDifferentBase = 1;
 } elsif (defined $relativeToEpoch) {
     $now = $relativeToEpoch;
+    $hasDifferentBase = 1;
 }
 
 if (@ARGV == 1) {
@@ -327,7 +336,7 @@ if (@ARGV == 1) {
     }
 
     my $algorithm;
-    if (defined $relativeToDate or defined $relativeToEpoch) {
+    if ($hasDifferentBase) {
 	$baseEpoch = $now;
 	$algorithm = \&reldateBase;
     } elsif ($isRelativeToFirst or $isRelativeEach or $isDeltaToFirst or $isDeltaEach) {
@@ -336,8 +345,11 @@ if (@ARGV == 1) {
 	$algorithm = \&reldateNormal;
     }
 
-# print "**** [$splitPattern]\n";
     while (<>) {
+	# Update the current time for each record, to accommodate long-running
+	# parsing.
+	$now = $^T unless $hasDifferentBase;
+
 	s/${splitPattern}/$algorithm->($&)/ges;
 	print;
     }
@@ -385,6 +397,17 @@ reldate - Show relative dates instead of absolute ones
 =item B<--date-pattern>
 
 Parse any match of PATTERN as a date.
+
+By default, parses the following date formats:
+
+ %Y%m%d_%H%M%S
+ %F %T
+ %d-%[mbB]-%Y %T
+ %[mbB] %d[,] %Y %R
+ %[mbB] %d[,] %Y
+ %FT%TZ
+
+Example PATTERNs:
 
  \b(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)T(?<hours>\d\d):(?<minutes>\d\d):(?<seconds>\d\d)(?<timezone>Z)\b
  \b(?<year>\d\d\d\d)(?<month>\d\d)(?<day>\d\d)\b
