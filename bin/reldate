@@ -49,28 +49,11 @@ use Time::Piece;
 my @monthsShort = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
 my @monthsLong = qw/January February March April May June July August September October November December/;
 my $monthsExpr = join('|', @monthsShort, @monthsLong);
-my $datePattern = join('|', (
-	qr/\b(?<year>\d\d\d\d)(?<month>[01]\d)(?<day>[0123]\d)(?:[ _-](?<hours>[012]\d)(?<minutes>[0-5]\d)(?<seconds>[0-5]\d)?)?\b/,
-	qr/\b(?<year>\d\d\d\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<day>[0123]\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
-	qr/\b(?<day>[0123]\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<year>\d\d\d\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
-	qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d),?\s+(?:(?<year>\d\d\d\d)\s+)?(?:(?<hours>[012]\d):(?<minutes>[0-5]\d))\b/,
-	qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d)(?:,?\s+(?<year>\d\d\d\d))\b/,
-	qr/\b(?<year>\d\d\d\d)-(?<month>[01]\d)-(?<day>[0123]\d)T(?<hours>[012]\d):(?<minutes>[0-5]\d):(?<seconds>[0-5]\d)(?<timezone>Z)\b/)
-);
-my $keepWidth = 'no';
-my $precision = 1;
-my $isPreferPast = 0;
-my $isPreferFuture = 0;
-my $isWithWeekday = 0;
-my $prefix = '';
-my $suffix = '';
-my @defaultMassages = (\&massageWeekdays, \&massageFull);
-my $isRelative = 0;
-my $isDelta = 0;
-my $isEach = 0;
 my $nowFuncref = sub { return $^T; };
 my $now = $nowFuncref->();
 my $baseEpoch;
+my @defaultMassages = (\&massageWeekdays, \&massageFull);
+my ($datePattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 
 sub setNowSource {
     (undef, $nowFuncref) = @_;
@@ -248,12 +231,7 @@ sub deltaReplacement {
     return $replacement;
 }
 
-my $isDoubleDash = 0;
-my $timespan;
-my $epoch;
-my $within;
-my $reset;
-my $hasDifferentBase = 0;
+my ($isDoubleDash, $timespan, $epoch, $within, $reset, $hasDifferentBase);
 
 sub process {
     my ($argumentsRef, $inputHandleRef) = @_;
@@ -308,6 +286,32 @@ sub process {
 
 sub run {
     my (undef, $argumentsRef, $inputHandleRef) = @_;
+
+    $datePattern = join('|', (
+	    qr/\b(?<year>\d\d\d\d)(?<month>[01]\d)(?<day>[0123]\d)(?:[ _-](?<hours>[012]\d)(?<minutes>[0-5]\d)(?<seconds>[0-5]\d)?)?\b/,
+	    qr/\b(?<year>\d\d\d\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<day>[0123]\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
+	    qr/\b(?<day>[0123]\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<year>\d\d\d\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
+	    qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d),?\s+(?:(?<year>\d\d\d\d)\s+)?(?:(?<hours>[012]\d):(?<minutes>[0-5]\d))\b/,
+	    qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d)(?:,?\s+(?<year>\d\d\d\d))\b/,
+	    qr/\b(?<year>\d\d\d\d)-(?<month>[01]\d)-(?<day>[0123]\d)T(?<hours>[012]\d):(?<minutes>[0-5]\d):(?<seconds>[0-5]\d)(?<timezone>Z)\b/)
+    );
+    $keepWidth = 'no';
+    $precision = 1;
+    $isPreferPast = 0;
+    $isPreferFuture = 0;
+    $isWithWeekday = 0;
+    $prefix = '';
+    $suffix = '';
+    $isRelative = 0;
+    $isDelta = 0;
+    $isEach = 0;
+
+    $isDoubleDash = 0;
+    $timespan = undef;
+    $epoch = undef;
+    $within = undef;
+    $reset = undef;
+    $hasDifferentBase = 0;
 
     my $help = 0;
     my $man = 0;
