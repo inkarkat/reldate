@@ -193,8 +193,9 @@ sub reldate {
 
     if ($keepWidth ne 'no') {
 	my $originalWidth = length($originalDate);
+	my $availableWidth = $originalWidth - length($prefix) - length($suffix); $availableWidth = 0 if $availableWidth < 0;
 	my $flag = ($keepWidth eq 'right-aligned' ? '' : '-');
-	$relativeDate = sprintf("%${flag}${originalWidth}s", $relativeDate);
+	$relativeDate = sprintf("%${flag}${availableWidth}s", $relativeDate);
     }
     return $relativeDate;
 }
