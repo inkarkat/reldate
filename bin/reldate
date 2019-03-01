@@ -11,29 +11,7 @@
 #
 # REMARKS:
 #
-# REVISION	DATE		REMARKS
-#	005	20-Jan-2019	ENH: Add options for differences to the first /
-#				preceding timestamp, to give delta information.
-#				ENH: Generalize line-based processing to be able
-#				to read arbitrary blocks (for the notion of
-#				"first" date in delta detection).
-#				ENH: Allow to do parsing only within certain
-#				pattern matches.
-#	004	30-Jul-2018	ENH: Allow to pass --timespan SECONDS and
-#				--epoch EPOCH as alternatives to FILE.
-#				Use --prefix and --suffix also for passed FILE.
-#	003	11-May-2018	ENH: Allow to handle UTC time in addition to
-#				local time. Add parsing for timezone and pass
-#				that to toEpoch(), which then uses either
-#				timelocal() or timegm().
-#				ENH: Add out-of-the-box support for
-#				"2018-05-11T07:15:39Z", e.g. used in Kubernetes
-#				kubectl JSON output.
-#	002	19-Feb-2016	ENH: Allow to parse textual months (Jan,
-#				January), too.
-#	001	09-Feb-2016	file creation
-#
-# @(#)reldate	003	(11-May-2018)	tools
+# @(#)reldate	$Id:$ reldate
 ###############################################################################
 
 package Local::Reldate;
