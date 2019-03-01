@@ -11,7 +11,7 @@
 #
 # REMARKS:
 #
-# @(#)reldate	$Id:$ reldate
+# @(#)reldate	$Id$ reldate
 ###############################################################################
 
 package Local::Reldate;
