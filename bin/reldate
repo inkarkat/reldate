@@ -270,8 +270,7 @@ sub run {
 	    qr/\b(?<year>\d\d\d\d)(?<month>[01]\d)(?<day>[0123]\d)(?:[ _-](?<hours>[012]\d)(?<minutes>[0-5]\d)(?<seconds>[0-5]\d)?)?\b/,
 	    qr/\b(?<year>\d\d\d\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<day>[0123]\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
 	    qr/\b(?<day>[0123]\d)-(?<month>(?:[01]\d|${monthsExpr}))-(?<year>\d\d\d\d)(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
-	    qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d),?\s+(?:(?<year>\d\d\d\d)\s+)?(?:(?<hours>[012]\d):(?<minutes>[0-5]\d))\b/,
-	    qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d)(?:,?\s+(?<year>\d\d\d\d))\b/,
+	    qr/\b(?<month>${monthsExpr})\s+(?<day>[0123]?\d),?(?:\s+(?<year>\d\d\d\d))?(?: (?<hours>[012]\d):(?<minutes>[0-5]\d)(?::(?<seconds>[0-5]\d))?)?\b/,
 	    qr/\b(?<year>\d\d\d\d)-(?<month>[01]\d)-(?<day>[0123]\d)T(?<hours>[012]\d):(?<minutes>[0-5]\d):(?<seconds>[0-5]\d)(?<timezone>Z)\b/)
     );
     $keepWidth = 'no';
@@ -408,8 +407,11 @@ By default, parses the following date formats:
  %d-%[mbB]-%Y
  %d-%[mbB]-%Y %H:%M
  %d-%[mbB]-%Y %H:%M:%S
- %[mbB] %d[,] %Y %H:%M
  %[mbB] %d[,] %Y
+ %[mbB] %d[,] %Y %H:%M
+ %[mbB] %d[,] %Y %H:%M:%S
+ %[mbB] %d[,] %H:%M
+ %[mbB] %d[,] %H:%M:%S
  %Y-%m-%dT%H:%M:%SZ
 
 Example PATTERNs:
