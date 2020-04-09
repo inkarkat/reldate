@@ -435,11 +435,11 @@ Within the parsed block (cp. C<--within> and C<--reset>), the first found date i
 
 =item B<--delta-to-first>
 
-Within the parsed block (cp. C<--within> and C<--reset>), the first found date is taken as the base for the rest of the block. All subsequent dates refer to that first one with the subject I<it>.
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed relative to the the current date (that's the difference to C<--relative-to-first>), and taken as the base for the rest of the block. All subsequent dates refer to that first one with the subject I<it>.
 
 =item B<--delta-each>
 
-Within the parsed block (cp. C<--within> and C<--reset>), each date is made relative to the preceding one, which is referred to as I<that>.
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed relative to the the current date (that's the difference to C<--relative-each>). Each following date is made relative to the preceding one, which is referred to as I<that>.
 
 =item B<--within>
 
