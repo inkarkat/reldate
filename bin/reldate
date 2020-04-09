@@ -55,12 +55,12 @@ sub toEpoch {
     my ($seconds, $minutes, $hours, $day, $month, $year, $timezone) = @_;
     my $timeConverter = ($timezone ? \&timegm : \&timelocal);
 
-    my $epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year));
+    my $epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->strptime($now, '%s')->year));
 
     if (! defined($year) && $isPreferPast && $now - $epoch < 0) {
-	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year - 1));
+	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->strptime($now, '%s')->year - 1));
     } elsif (! defined($year) && $isPreferFuture && $now - $epoch > 0) {
-	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->new()->year + 1));
+	$epoch = $timeConverter->($seconds, $minutes, (defined($hours) ? $hours : 12), $day, numericalMonth($month), (defined($year) ? $year : Time::Piece->strptime($now, '%s')->year + 1));
     }
 
     return $epoch;
