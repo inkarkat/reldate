@@ -15,7 +15,7 @@ At 20180501_071159, we said "1 hour later will happen".
 At 221 days later, she said "1 day earlier was good, until 1 hour later".
 At 32 days later, she said "Nee".
 At 10 days later, he said "Between 49 minutes later and 5 seconds later".
-At 2 days later, she met at that time.
+At 2 days later, she met also then.
 At 1 year later, he said "Between 2 days earlier and 5 days later".}, 'relative each in all');
 
 run_with_input_produces_output(['--relative-each', '--within', '"[^"]+"'], $input, qq{

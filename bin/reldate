@@ -128,7 +128,7 @@ sub massageToFirstAgain {
 sub massageEach {
     my $relativeDate = shift;
 
-    $relativeDate = 'at that time' if ($relativeDate eq 'right now');
+    $relativeDate = 'also then' if ($relativeDate eq 'right now');
     $relativeDate =~ s/(.*) ago$/$1 earlier/;
     $relativeDate =~ s/(.*) from now$/$1 later/;
 
@@ -431,7 +431,7 @@ Within the parsed block (cp. C<--within> and C<--reset>), the first found date i
 
 =item B<--relative-each>
 
-Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed as-is. Each following date is made relative to the preceding one, which is referred to as I<at that time> / I<earlier> / I<later>.
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed as-is. Each following date is made relative to the preceding one, which is referred to as I<also then> / I<earlier> / I<later>.
 
 =item B<--delta-to-first>
 
@@ -439,7 +439,7 @@ Within the parsed block (cp. C<--within> and C<--reset>), the first found date i
 
 =item B<--delta-each>
 
-Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed relative to the the current date (that's the difference to C<--relative-each>). Each following date is made relative to the preceding one, which is referred to as I<at that time> / I<earlier> / I<later>.
+Within the parsed block (cp. C<--within> and C<--reset>), the first found date is printed relative to the the current date (that's the difference to C<--relative-each>). Each following date is made relative to the preceding one, which is referred to as I<also then> / I<earlier> / I<later>.
 
 =item B<--within>
 
