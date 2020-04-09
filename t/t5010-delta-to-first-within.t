@@ -11,19 +11,19 @@ At 20190120_124000, she met 20190120_124000.
 At 20200601_120000, he said "Between 20200530_120000 and 20200604_120000".};
 
 run_with_input_produces_output(['--delta-to-first', '--within', 'all'], $input, qq{
-At 267 days ago, we said "1 hour later than it will happen".
-At also 221 days later than it, she said "also 220 days later than it was good, until also 220 days later than it".
-At also 252 days later than it, she said "Nee".
-At also 262 days later than it, he said "Between also 262 days later than it and also 262 days later than it".
-At also 264 days later than it, she met also 264 days later than it.
-At also 2 years later than it, he said "Between also 2 years later than it and also 2 years later than it".}, 'delta to first in all');
+At 267 days ago, we said "1 hour after it will happen".
+At also 221 days after it, she said "also 220 days after it was good, until also 220 days after it".
+At also 252 days after it, she said "Nee".
+At also 262 days after it, he said "Between also 262 days after it and also 262 days after it".
+At also 264 days after it, she met also 264 days after it.
+At also 2 years after it, he said "Between also 2 years after it and also 2 years after it".}, 'delta to first in all');
 
 run_with_input_produces_output(['--delta-to-first', '--within', '"[^"]+"'], $input, qq{
 At 20180501_071159, we said "267 days ago will happen".
-At 20181208_060000, she said "47 days ago was good, until 1 hour later than it".
+At 20181208_060000, she said "47 days ago was good, until 1 hour after it".
 At 20190108_060000, she said "Nee".
-At 20190118_121111, he said "Between 4 days ago and 5 seconds later than it".
+At 20190118_121111, he said "Between 4 days ago and 5 seconds after it".
 At 20190120_124000, she met 20190120_124000.
-At 20200601_120000, he said "Between in 1 year and 5 days later than it".}, 'delta to first inside double quoted text');
+At 20200601_120000, he said "Between in 1 year and 5 days after it".}, 'delta to first inside double quoted text');
 
 done_testing;

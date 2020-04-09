@@ -114,9 +114,9 @@ sub massageForShortTimespan {
 sub massageToFirst {
     my $relativeDate = shift;
 
-    $relativeDate = 'at the same time' if ($relativeDate eq 'right now');
+    $relativeDate = 'at its time' if ($relativeDate eq 'right now');
     $relativeDate =~ s/(.*) ago$/$1 before it/;
-    $relativeDate =~ s/(.*) from now$/$1 later than it/;
+    $relativeDate =~ s/(.*) from now$/$1 after it/;
 
     return $relativeDate;
 }
@@ -421,7 +421,7 @@ Example PATTERNs:
 
 =item B<--relative-to>, B<--relative-to-epoch>
 
-Relate dates to passed BASE-DATE (also parsed according to C<--date-pattern>) or BASE-EPOCH instead of comparing to the current date. Relative dates will refer to I<it> and I<at the same time> instead of now (except when used together with C<--delta-to-first>, where I<it> will refer to the first date).
+Relate dates to passed BASE-DATE (also parsed according to C<--date-pattern>) or BASE-EPOCH instead of comparing to the current date. Relative dates will refer to I<it> and I<at its time> instead of now (except when used together with C<--delta-to-first>, where I<it> will refer to the first date).
 
 Also works for C<--epoch> and C<FILE>.
 
