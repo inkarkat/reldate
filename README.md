@@ -1,4 +1,4 @@
-# reldate
+### DESCRIPTION
 
 **reldate** turns absolute dates (e.g. <u>09-02-2016</u>) into timespans relative to
 the current date (<u>2 days ago</u>).
@@ -11,7 +11,7 @@ EPOCH.
 
 It prints the modification date, relative to now, of the passed FILE.
 
-## Dependencies
+### DEPENDENCIES
 
 On Ubuntu, this requires the following packages:
 

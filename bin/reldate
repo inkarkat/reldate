@@ -399,12 +399,18 @@ Parse any match of PATTERN as a date.
 
 By default, parses the following date formats:
 
- %Y%m%d_%H%M%S
- %F %T
- %d-%[mbB]-%Y %T
- %[mbB] %d[,] %Y %R
+ %Y%m%d
+ %Y%m%d[ _-]%H:%M
+ %Y%m%d[ _-]%H:%M:%S
+ %Y-%m-%d
+ %Y-%m-%d %H:%M
+ %Y-%m-%d %H:%M:%S
+ %d-%[mbB]-%Y
+ %d-%[mbB]-%Y %H:%M
+ %d-%[mbB]-%Y %H:%M:%S
+ %[mbB] %d[,] %Y %H:%M
  %[mbB] %d[,] %Y
- %FT%TZ
+ %Y-%m-%dT%H:%M:%SZ
 
 Example PATTERNs:
 
