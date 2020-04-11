@@ -16,6 +16,7 @@
 
 package Local::Reldate;
 
+use IO::Interactive qw(is_interactive);
 use List::Util qw(first);
 use Modern::Perl;
 use Getopt::Long qw(GetOptionsFromArray);
@@ -31,7 +32,7 @@ my $nowFuncref = sub { return $^T; };
 my $now = $nowFuncref->();
 my $baseEpoch;
 my @defaultMassages = (\&massageWeekdays, \&massageFull);
-my ($datePattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $prefix, $suffix, $isRelative, $isDelta, $isEach);
+my ($datePattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 
 sub setNowSource {
     (undef, $nowFuncref) = @_;
@@ -137,7 +138,7 @@ sub massageEach {
 
 sub reldateNormal {
     my $string = shift;
-    $string =~ 	s/${datePattern}/$prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix/ge;
+    $string =~ 	s/${datePattern}/$colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix/ge;
     return $string;
 }
 
@@ -194,13 +195,13 @@ sub deltaReplacement {
     if ($isRelative) {
 	$replacement = ($isFirst ?
 	    $originalDate :
-	    $prefix . reldate(\@massages, $baseEpoch, $epoch, $originalDate) . $suffix
+	    $colorPrefix . $prefix . reldate(\@massages, $baseEpoch, $epoch, $originalDate) . $suffix . $colorSuffix
 	);
     } else {
-	$replacement = $prefix . ($isFirst ?
+	$replacement = $colorPrefix . $prefix . ($isFirst ?
 	    reldate(\@defaultMassages, $now, $epoch, $originalDate) :
 	    reldate(\@massages, $baseEpoch, $epoch, $originalDate)
-	) . $suffix;
+	) . $suffix . $colorSuffix;
     }
 
     if ($isRecordBase) {
@@ -278,6 +279,8 @@ sub run {
     $isPreferPast = 0;
     $isPreferFuture = 0;
     $isWithWeekday = 0;
+    my $color = 'auto';
+    my $isNoColor = 0;
     $prefix = '';
     $suffix = '';
     $isRelative = 0;
@@ -335,6 +338,8 @@ sub run {
 	'prefer-past' => \$isPreferPast,
 	'prefer-future' => \$isPreferFuture,
 	'with-weekday' => \$isWithWeekday,
+	'color=s' => \$color,
+	'no-color' => \$isNoColor,
 	'prefix=s' => \$prefix,
 	'suffix=s' => \$suffix,
 	'timespan=s' => \$timespan,
@@ -343,6 +348,15 @@ sub run {
     pod2usage(-exitval => 0, -verbose => 0) if $help;
     pod2usage(-exitval => 0, -verbose => 2) if $man;
     pod2usage(-exitval => 2, -message => "--prefer-past and --prefer-future are mutually exclusive") if ($isPreferPast && $isPreferFuture);
+    pod2usage(-exitval => 2, -message => 'cannot combine --no-color with --color') if ($isNoColor && $color ne 'never');
+    pod2usage(-exitval => 2, -verbose => 0) unless grep { $color eq $_ } qw(never always auto);
+
+    $colorPrefix = (defined $ENV{'RELDATE_COLOR_ON'} ? $ENV{'RELDATE_COLOR_ON'} : "\e[07m");
+    $colorSuffix = (defined $ENV{'RELDATE_COLOR_OFF'} ? $ENV{'RELDATE_COLOR_OFF'} : "\e[0m");
+    if ($color eq 'never' || $isNoColor || ($color eq 'auto' && ! is_interactive())) {
+	$colorPrefix='';
+	$colorSuffix='';
+    }
 
     process($argumentsRef, $inputHandleRef);
 }
@@ -357,7 +371,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--prefix STRING] [--suffix STRING]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -379,6 +393,7 @@ reldate - Show relative dates instead of absolute ones
     --prefer-past		assume incomplete date is in past
     --prefer-future		assume incomplete date is in future
     --with-weekday		use "coming/the previous Monday" instead of "in two days /ago"
+    --color never|always|auto   surround the relative date (and prefix / suffix if given) with reverse color
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
 
@@ -470,6 +485,12 @@ If an incomplete date specification (e.g. without a year) is parsed, assume that
 =item B<--with-weekday>
 
 For days that are within 7 days, use "coming/the previous Monday" instead of "in two days /ago". For days that are longer in the future or past, append the weekday to the relative date.
+
+=item B<--color>
+
+=item B<--no-color>
+
+Surround the relative date (and prefix / suffix if given) with escape sequences to display them in color on the terminal. The colors are defined by the environment variable RELDATE_COLOR_ON and RELDATE_COLOR_OFF.
 
 =item B<--prefix>
 

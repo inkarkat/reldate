@@ -15,9 +15,9 @@ It prints the modification date, relative to now, of the passed FILE.
 
 On Ubuntu, this requires the following packages:
 
-    $ apt-get install libmodern-perl-perl libtime-duration-perl
+    $ apt-get install libmodern-perl-perl libtime-duration-perl libio-interative-perl
 
 On CentOS, this requires the following packages:
 
-    $ yum install perl-Modern-Perl perl-Time-Duration perl-Time-Piece
+    $ yum install perl-Modern-Perl perl-Time-Duration perl-Time-Piece perl-IO-Interactive
 
