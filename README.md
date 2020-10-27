@@ -1,5 +1,7 @@
 ### DESCRIPTION
 
+_Show relative dates instead of absolute ones._
+
 **reldate** turns absolute dates (e.g. <u>09-02-2016</u>) into timespans relative to
 the current date (<u>2 days ago</u>).
 
