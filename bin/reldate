@@ -32,6 +32,7 @@ my $nowFuncref = sub { return $^T; };
 my $now = $nowFuncref->();
 my $baseEpoch;
 my @defaultMassages = (\&massageWeekdays, \&massageFull);
+my @shortenUnitsMassage = ();
 my ($datePattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 
 sub setNowSource {
@@ -136,6 +137,20 @@ sub massageEach {
     return $relativeDate;
 }
 
+sub massageToShortUnits {
+    my $relativeDate = shift;
+
+    $relativeDate =~ s/ seconds?\b/s/;
+    $relativeDate =~ s/ minutes?\b/m/;
+    $relativeDate =~ s/ hours?\b/h/;
+    $relativeDate =~ s/ days?\b/d/;
+    $relativeDate =~ s/ weeks?\b/w/;
+    $relativeDate =~ s/ months?\b/mo/;
+    $relativeDate =~ s/ years?\b/y/;
+
+    return $relativeDate;
+}
+
 sub reldateNormal {
     my $string = shift;
     $string =~ 	s/${datePattern}/$colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix/ge;
@@ -188,6 +203,8 @@ sub deltaReplacement {
 	    \&massageToFirst :
 	    \&massageToFirstAgain
     );
+    push(@massages, @shortenUnitsMassage);
+
     my $isFirst = ($count == 0);
     my $isRecordBase = ($isEach ? 1 : $isFirst);
 
@@ -225,8 +242,9 @@ sub process {
 	my $age = $now - (stat($file))[9];  # 9 = modtime
 	print $prefix, timespanToReldate(\@defaultMassages, $age), $suffix, "\n";
     } elsif (defined $timespan) {
-	my @massages = ($timespan =~ /^[+-]/ ? @defaultMassages : (\&massageWeekdays, \&massageForShortTimespan));
-	print $prefix, timespanToReldate(\@massages, $timespan), $suffix, "\n";
+	my @massages = (\&massageWeekdays, \&massageForShortTimespan);
+	push(@massages, @shortenUnitsMassage);
+	print $prefix, timespanToReldate($timespan =~ /^[+-]/ ? \@defaultMassages : \@massages, $timespan), $suffix, "\n";
     } elsif (defined $epoch) {
 	print $prefix, timespanToReldate(\@defaultMassages, $now - $epoch), $suffix, "\n";
     } else {
@@ -286,6 +304,7 @@ sub run {
     $isRelative = 0;
     $isDelta = 0;
     $isEach = 0;
+    my $isShortUnits = 0;
 
     $isDoubleDash = 0;
     $timespan = undef;
@@ -344,6 +363,7 @@ sub run {
 	'suffix=s' => \$suffix,
 	'timespan=s' => \$timespan,
 	'epoch=i' => \$epoch,
+	'short-units' => \$isShortUnits,
     ) or pod2usage(2);
     pod2usage(-exitval => 0, -verbose => 0) if $help;
     pod2usage(-exitval => 0, -verbose => 2) if $man;
@@ -358,6 +378,9 @@ sub run {
 	$colorSuffix='';
     }
 
+    push(@shortenUnitsMassage, (\&massageToShortUnits)) if ($isShortUnits);
+    push(@defaultMassages, @shortenUnitsMassage);
+
     process($argumentsRef, $inputHandleRef);
 }
 
@@ -371,7 +394,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -396,6 +419,7 @@ reldate - Show relative dates instead of absolute ones
     --color never|always|auto   surround the relative date (and prefix / suffix if given) with reverse color
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
+    --short-units               use short units
 
     --timespan [+-]SECONDS      convert SECONDS difference to relative date
     --epoch EPOCH               convert EPOCH seconds to relative date
@@ -499,6 +523,10 @@ STRING to put before a recognized relative date. E.g. [ or ^[[01m.
 =item B<--suffix>
 
 STRING to put after a recognized relative date. E.g. ] or ^[[0m.
+
+=item B<--short-units>
+
+Use "2m" instead of "2 minutes".
 
 =item B<--timespan>
 
