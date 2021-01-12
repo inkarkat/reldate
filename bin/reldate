@@ -568,4 +568,10 @@ On CentOS, this requires the following packages:
 
   $ yum install perl-Modern-Perl perl-Time-Duration perl-Time-Piece
 
+=head1 DEVELOPMENT
+
+Run the test suite from the project directory via
+
+  $ prove -I.
+
 =cut
