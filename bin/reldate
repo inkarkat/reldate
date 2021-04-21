@@ -562,7 +562,7 @@ It prints the modification date, relative to now, of the passed FILE.
 
 On Ubuntu, this requires the following packages:
 
-  $ apt-get install libmodern-perl-perl libtime-duration-perl
+  $ apt-get install libio-interactive-perl libmodern-perl-perl libtime-duration-perl
 
 On CentOS, this requires the following packages:
 
