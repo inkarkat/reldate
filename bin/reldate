@@ -321,6 +321,10 @@ sub run {
     GetOptionsFromArray($argumentsRef,
 	'help|h|?' => \$help,
 	'man' => \$man,
+	"unbuffered|u" => sub {
+	    use IO::Handle qw();
+	    STDOUT->autoflush(1);
+	},
 	'date-pattern=s' => \$datePattern,
 	'relative-to=s' => sub {
 	    my $baseDate = $_[1];
@@ -402,6 +406,7 @@ reldate - Show relative dates instead of absolute ones
  reldate [...] FILE
 
     Options:
+    --unbuffered                flush output after every line even when output is not to the terminal
     --date-pattern PATTERN	parse PATTERN as a date
     --relative-to BASE-DATE     make all dates relative to BASE-DATE
     --relative-to-epoch EPOCH   make all dates relative to EPOCH
@@ -430,6 +435,10 @@ reldate - Show relative dates instead of absolute ones
 =head1 OPTIONS
 
 =over 8
+
+=item B<--unbuffered|-u>
+
+When the output is not to a terminal, there will be output buffering. This enables flushing after every line, so that you can use the command inside a pipeline and still receive timely updates.
 
 =item B<--date-pattern>
 
