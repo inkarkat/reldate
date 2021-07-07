@@ -153,20 +153,20 @@ sub massageToShortUnits {
 
 sub reldateNormal {
     my $string = shift;
-    $string =~ 	s/${datePattern}/$colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix/ge;
+    $string =~ 	s/${datePattern}/$colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix/ge if $datePattern;
     return $string;
 }
 
 sub reldateBase {
     my $string = shift;
-    $string =~ s/${datePattern}/deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
+    $string =~ s/${datePattern}/deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge if $datePattern;
     return $string;
 }
 
 sub reldateDelta {
     my $string = shift;
     my $count = 0;
-    $string =~ s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge;
+    $string =~ s/${datePattern}/deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&)/ge if $datePattern;
     return $string;
 }
 
