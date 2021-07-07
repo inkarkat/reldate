@@ -33,7 +33,7 @@ my $now = $nowFuncref->();
 my $baseEpoch;
 my @defaultMassages = (\&massageWeekdays, \&massageFull);
 my @shortenUnitsMassage = ();
-my ($datePattern, $epochPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
+my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 
 sub setNowSource {
     (undef, $nowFuncref) = @_;
@@ -66,6 +66,22 @@ sub toEpoch {
     }
 
     return $epoch;
+}
+
+sub fromDiff {
+    my ($sign, $seconds, $minutes, $hours, $days, $weeks, $months, $years) = @_;
+
+    my $delta = (defined($seconds) ? $seconds : 0);
+    $delta += $minutes * 60 if defined($minutes);
+    $delta += $hours * 3600 if defined($hours);
+    $delta += $days * 86400 if defined($days);
+    $delta += $weeks * 604800 if defined($weeks);
+    $delta += $months * 2592000 if defined($months);
+    $delta += $years * 31536000 if defined($years);
+
+    $delta *= -1 if defined($sign) and $sign eq '-';
+
+    return $delta;
 }
 
 sub massageWeekdays {
@@ -153,8 +169,10 @@ sub massageToShortUnits {
 
 sub reldateNormal {
     my $string = shift;
+    my @diffMassages = (\&massageEach);
     $string =~ 	s/${datePattern}/$colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix/ge if $datePattern;
     $string =~ 	s/${epochPattern}/$colorPrefix . $prefix . reldate(\@defaultMassages, $now, $+{epoch}, $&) . $suffix . $colorSuffix/ge if $epochPattern;
+    $string =~ 	s/${diffPattern}/$colorPrefix . $prefix . reldate(\@diffMassages, 0, fromDiff($+{sign}, $+{seconds}, $+{minutes}, $+{hours}, $+{days}, $+{weeks}, $+{months}, $+{years}), $&) . $suffix . $colorSuffix/ge if $diffPattern;
     return $string;
 }
 
@@ -296,6 +314,7 @@ sub run {
 	    qr/\b(?<year>\d\d\d\d)-(?<month>[01]\d)-(?<day>[0123]\d)T(?<hours>[012]\d):(?<minutes>[0-5]\d):(?<seconds>[0-5]\d)(?<timezone>Z)\b/)
     );
     $epochPattern = qr/(?<!\w)@(?<epoch>\d{1,10})\b/;
+    $diffPattern = qr/(?<!\w)(?<sign>[+-])(?:(?<hours>\d{1,4}):(?<minutes>[0-5]\d):(?<seconds>[0-5]\d)|(?<minutes>\d{1,4}):(?<seconds>[0-5]\d))(?!\w|:)/;
     $keepWidth = 'no';
     $precision = 1;
     $isPreferPast = 0;
@@ -331,6 +350,7 @@ sub run {
 	},
 	'date-pattern=s' => \$datePattern,
 	'epoch-pattern=s' => \$epochPattern,
+	'diff-pattern=s' => \$diffPattern,
 	'relative-to=s' => sub {
 	    my $baseDate = $_[1];
 	    unless (($now = $baseDate) =~ s/^${datePattern}$/toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone})/e ) {
@@ -403,7 +423,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -414,6 +434,7 @@ reldate - Show relative dates instead of absolute ones
     --unbuffered                flush output after every line even when output is not to the terminal
     --date-pattern PATTERN	parse PATTERN as a date
     --epoch-pattern PATTERN	parse PATTERN as a Unix epoch (seconds since 1970)
+    --diff-pattern PATTERN	parse PATTERN as time difference
     --relative-to BASE-DATE     make all dates relative to BASE-DATE
     --relative-to-epoch EPOCH   make all dates relative to EPOCH
     --relative-to-first         take the first date as an absolute base, then make all subsequent ones relative to the first
@@ -478,6 +499,17 @@ Example PATTERNs:
 Parse any match of PATTERN as a Unix epoch (seconds since 1970-01-01)
 
 By default, parses C<@SSSSSSSSS> (number prefixed with C<@>).
+
+=item B<--diff-pattern>
+
+Parse any match of PATTERN as a time difference. The wording is similar as with C<--relative-each>, referring to I<earlier> and I<later> dates. Is not active when any of the C<--relative-...> or C<--delta-...> options are given.
+
+By default, parses the following differences:
+
+ +HHH:MM:SS
+ +MMM:SS
+ -HHH:MM:SS
+ -MMM:SS
 
 =item B<--relative-to>, B<--relative-to-epoch>
 
