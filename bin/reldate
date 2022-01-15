@@ -123,7 +123,7 @@ sub massageFull {
 sub massageForShortTimespan {
     my $relativeDate = shift;
 
-    $relativeDate = 'just now' if ($relativeDate eq 'right now');
+    $relativeDate = 'no time' if ($relativeDate eq 'right now');
     $relativeDate =~ s/ from now$| ago$//;
 
     return $relativeDate;
@@ -585,7 +585,7 @@ Use "2m" instead of "2 minutes".
 
 SECONDS of time difference to directly convert to a relative date. Negative SECONDS lie in the future.
 
-Without a [+-] sign, prints a neutral representation (e.g. I<16 minutes> instead of I<16 minutes ago>).
+Without a [+-] sign, prints a neutral representation of the passed time (e.g. I<16 minutes> instead of I<16 minutes ago>).
 
 =item B<--epoch>
 
