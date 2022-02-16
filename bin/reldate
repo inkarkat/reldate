@@ -350,6 +350,10 @@ sub run {
 	},
 	'date-pattern=s' => \$datePattern,
 	'epoch-pattern=s' => \$epochPattern,
+	'epoch-lines' => sub {
+	    $datePattern = undef;
+	    $epochPattern = qr/^@?(?<epoch>\d{1,10})(?:$|(?=\s))/;
+	},
 	'diff-pattern=s' => \$diffPattern,
 	'relative-to=s' => sub {
 	    my $baseDate = $_[1];
@@ -423,7 +427,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN|--epoch-lines] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -434,6 +438,7 @@ reldate - Show relative dates instead of absolute ones
     --unbuffered                flush output after every line even when output is not to the terminal
     --date-pattern PATTERN	parse PATTERN as a date
     --epoch-pattern PATTERN	parse PATTERN as a Unix epoch (seconds since 1970)
+    --epoch-lines	        parse every line as a Unix epoch (seconds since 1970)
     --diff-pattern PATTERN	parse PATTERN as time difference
     --relative-to BASE-DATE     make all dates relative to BASE-DATE
     --relative-to-epoch EPOCH   make all dates relative to EPOCH
@@ -502,9 +507,11 @@ By default, parses C<@SSSSSSSSS> (number prefixed with C<@>) with this pattern:
 
  (?<!\w)@(?<epoch>\d{1,10})\b
 
-Read one epoch per line with:
+=item B<--epoch-lines>
 
- ^(?<epoch>\d{1,10})$
+Parse every line as a Unix epoch (seconds since 1970-01-01; optionally followed by whitespace and other text that is ignored); this uses this pattern:
+
+ ^@?(?<epoch>\d{1,10})(?:$|(?=\s))
 
 =item B<--diff-pattern>
 
