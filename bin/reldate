@@ -498,7 +498,13 @@ Example PATTERNs:
 
 Parse any match of PATTERN as a Unix epoch (seconds since 1970-01-01)
 
-By default, parses C<@SSSSSSSSS> (number prefixed with C<@>).
+By default, parses C<@SSSSSSSSS> (number prefixed with C<@>) with this pattern:
+
+ (?<!\w)@(?<epoch>\d{1,10})\b
+
+Read one epoch per line with:
+
+ ^(?<epoch>\d{1,10})$
 
 =item B<--diff-pattern>
 
