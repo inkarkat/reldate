@@ -114,7 +114,7 @@ sub massageFull {
 
     # Massage the output from Time::Duration to make it more amenable to my
     # preferences.
-    $relativeDate = 'just now' if ($relativeDate eq 'right now');
+    $relativeDate = ($isShortRelations && $isShortUnits ? 'now' : 'just now') if ($relativeDate eq 'right now');
     $relativeDate = 'yesterday' if ($relativeDate eq '1 day ago');
     $relativeDate = 'tomorrow' if ($relativeDate eq '1 day from now');
     $relativeDate =~ s/(.*) from now$/in $1/;

@@ -10,8 +10,8 @@ run_produces_output(['--short-relations', '--short-units', '--timespan', '120'],
 run_produces_output(['--short-relations', '--short-units', '--timespan', '122'], '2m', 'timespan of 122 seconds with shortened relation and unit');
 
 run_produces_output(['--short-relations', '--short-units', '--timespan', '0'], '=0s', 'timespan of 0 seconds with shortened relation and unit');
-run_produces_output(['--short-relations', '--short-units', '--timespan', '+0'], 'just now', 'timespan of +0 seconds with shortened relation and unit');
-run_produces_output(['--short-relations', '--short-units', '--timespan', '-0'], 'just now', 'timespan of -0 seconds with shortened relation and unit');
+run_produces_output(['--short-relations', '--short-units', '--timespan', '+0'], 'now', 'timespan of +0 seconds with shortened relation and unit');
+run_produces_output(['--short-relations', '--short-units', '--timespan', '-0'], 'now', 'timespan of -0 seconds with shortened relation and unit');
 run_produces_output(['--short-relations', '--short-units', '--timespan', '90000'], '1d', 'timespan of 1 day with shortened relation and unit');
 run_produces_output(['--short-relations', '--short-units', '--timespan', '32000000'], '1y', 'timespan of 1 year with shortened relation and unit');
 
