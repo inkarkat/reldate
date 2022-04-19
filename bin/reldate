@@ -33,6 +33,8 @@ my $now = $nowFuncref->();
 my $baseEpoch;
 my @defaultMassages = (\&massageWeekdays, \&massageFull);
 my @shortenUnitsMassage = ();
+my $isShortRelations = 0;
+my $isShortUnits = 0;
 my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 
 sub setNowSource {
@@ -112,7 +114,7 @@ sub massageFull {
 
     # Massage the output from Time::Duration to make it more amenable to my
     # preferences.
-    $relativeDate = 'just now' if ($relativeDate eq 'right now');
+    $relativeDate = ($isShortRelations && $isShortUnits ? 'now' : 'just now') if ($relativeDate eq 'right now');
     $relativeDate = 'yesterday' if ($relativeDate eq '1 day ago');
     $relativeDate = 'tomorrow' if ($relativeDate eq '1 day from now');
     $relativeDate =~ s/(.*) from now$/in $1/;
@@ -123,7 +125,7 @@ sub massageFull {
 sub massageForShortTimespan {
     my $relativeDate = shift;
 
-    $relativeDate = 'no time' if ($relativeDate eq 'right now');
+    $relativeDate = ($isShortRelations && $isShortUnits ? '=0s' : 'no time') if ($relativeDate eq 'right now');
     $relativeDate =~ s/ from now$| ago$//;
 
     return $relativeDate;
@@ -146,9 +148,9 @@ sub massageToFirstAgain {
 sub massageEach {
     my $relativeDate = shift;
 
-    $relativeDate = 'also then' if ($relativeDate eq 'right now');
-    $relativeDate =~ s/(.*) ago$/$1 earlier/;
-    $relativeDate =~ s/(.*) from now$/$1 later/;
+    $relativeDate = ($isShortRelations && $isShortUnits ? '=0s' : 'also then') if ($relativeDate eq 'right now');
+    $relativeDate =~ s/(.*) ago$/$isShortRelations ? "-$1" : "$1 earlier"/e;
+    $relativeDate =~ s/(.*) from now$/$isShortRelations ? "+$1" : "$1 later"/e;
 
     return $relativeDate;
 }
@@ -327,7 +329,6 @@ sub run {
     $isRelative = 0;
     $isDelta = 0;
     $isEach = 0;
-    my $isShortUnits = 0;
 
     $isDoubleDash = 0;
     $timespan = undef;
@@ -397,6 +398,11 @@ sub run {
 	'timespan=s' => \$timespan,
 	'epoch=i' => \$epoch,
 	'short-units' => \$isShortUnits,
+	'short-relations' => \$isShortRelations,
+	'short' => sub {
+	    $isShortRelations = 1;
+	    $isShortUnits = 1;
+	},
     ) or pod2usage(2);
     pod2usage(-exitval => 0, -verbose => 0) if $help;
     pod2usage(-exitval => 0, -verbose => 2) if $man;
@@ -427,7 +433,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN|--epoch-lines] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN|--epoch-lines] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short] [--short-relations] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -456,7 +462,9 @@ reldate - Show relative dates instead of absolute ones
     --color never|always|auto   surround the relative date (and prefix / suffix if given) with reverse color
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
+    --short-relations           use -/+ instead of earlier / later
     --short-units               use short units
+    --short                     use -/+ and short units
 
     --timespan [+-]SECONDS      convert SECONDS difference to relative date
     --epoch EPOCH               convert EPOCH seconds to relative date
@@ -590,9 +598,19 @@ STRING to put before a recognized relative date. E.g. [ or ^[[01m.
 
 STRING to put after a recognized relative date. E.g. ] or ^[[0m.
 
+=item B<--short-relations>
+
+Use "+2 minutes" instead of "2 minutes later".
+
 =item B<--short-units>
 
 Use "2m" instead of "2 minutes".
+
+=item B<--short>
+
+Combination of C<--short-relations> and C<--short-units>.
+
+Use "+2m" instead of "2 minutes later".
 
 =item B<--timespan>
 
