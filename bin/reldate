@@ -399,6 +399,10 @@ sub run {
 	'epoch=i' => \$epoch,
 	'short-units' => \$isShortUnits,
 	'short-relations' => \$isShortRelations,
+	'short' => sub {
+	    $isShortRelations = 1;
+	    $isShortUnits = 1;
+	},
     ) or pod2usage(2);
     pod2usage(-exitval => 0, -verbose => 0) if $help;
     pod2usage(-exitval => 0, -verbose => 2) if $man;
@@ -429,7 +433,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN|--epoch-lines] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short-relations] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN|--epoch-lines] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short] [--short-relations] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -460,6 +464,7 @@ reldate - Show relative dates instead of absolute ones
     --suffix STRING		text after relative date
     --short-relations           use -/+ instead of earlier / later
     --short-units               use short units
+    --short                     use -/+ and short units
 
     --timespan [+-]SECONDS      convert SECONDS difference to relative date
     --epoch EPOCH               convert EPOCH seconds to relative date
@@ -600,6 +605,12 @@ Use "+2 minutes" instead of "2 minutes later".
 =item B<--short-units>
 
 Use "2m" instead of "2 minutes".
+
+=item B<--short>
+
+Combination of C<--short-relations> and C<--short-units>.
+
+Use "+2m" instead of "2 minutes later".
 
 =item B<--timespan>
 
