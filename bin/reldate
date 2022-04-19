@@ -34,6 +34,7 @@ my $baseEpoch;
 my @defaultMassages = (\&massageWeekdays, \&massageFull);
 my @shortenUnitsMassage = ();
 my $isShortRelations = 0;
+my $isShortUnits = 0;
 my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 
 sub setNowSource {
@@ -124,7 +125,7 @@ sub massageFull {
 sub massageForShortTimespan {
     my $relativeDate = shift;
 
-    $relativeDate = 'no time' if ($relativeDate eq 'right now');
+    $relativeDate = ($isShortRelations && $isShortUnits ? '=0s' : 'no time') if ($relativeDate eq 'right now');
     $relativeDate =~ s/ from now$| ago$//;
 
     return $relativeDate;
@@ -147,7 +148,7 @@ sub massageToFirstAgain {
 sub massageEach {
     my $relativeDate = shift;
 
-    $relativeDate = 'also then' if ($relativeDate eq 'right now');
+    $relativeDate = ($isShortRelations && $isShortUnits ? '=0s' : 'also then') if ($relativeDate eq 'right now');
     $relativeDate =~ s/(.*) ago$/$isShortRelations ? "-$1" : "$1 earlier"/e;
     $relativeDate =~ s/(.*) from now$/$isShortRelations ? "+$1" : "$1 later"/e;
 
@@ -328,7 +329,6 @@ sub run {
     $isRelative = 0;
     $isDelta = 0;
     $isEach = 0;
-    my $isShortUnits = 0;
 
     $isDoubleDash = 0;
     $timespan = undef;
