@@ -49,7 +49,7 @@ run_with_input_produces_output([@args], "At Jan 22, 2019, it broke.", "At 8 hour
 run_with_input_produces_output([@args], "At January 22, 2019, it broke.", "At 8 hours and 30 minutes ago, it broke.", 'B d, Y');
 
 
-run_with_input_produces_output([@args], "At 2019-01-22T05:00:20, it broke.", "At 2019-01-22T05:00:20, it broke.", 'unsupported: Y-m-dTH:M:S');
+run_with_input_produces_output([@args], "At 2019-01-22T05:00:20, it broke.", "At 15 hours, 29 minutes, and 40 seconds ago, it broke.", 'Y-m-dTH:M:S');
 run_with_input_produces_output([@args], "At 2019-01-22_05:00:20Z, it broke.", "At 2019-01-22_05:00:20Z, it broke.", 'unsupported: Y-m-d_H:M:SZ');
 run_with_input_produces_output([@args], "At 2019-01-22T05:00:20Z, it broke.", "At 14 hours, 29 minutes, and 40 seconds ago, it broke.", 'Y-m-dTH:M:SZ');
 
