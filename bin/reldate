@@ -251,7 +251,7 @@ sub deltaReplacement {
     return $replacement;
 }
 
-my ($isDoubleDash, $timespan, $epoch, $within, $reset, $hasDifferentBase);
+my ($isDoubleDash, $timespan, $isTimespanLines, $epoch, $within, $reset, $hasDifferentBase);
 
 sub process {
     my ($argumentsRef, $inputHandleRef) = @_;
@@ -268,6 +268,18 @@ sub process {
 	my @massages = (\&massageWeekdays, \&massageForShortTimespan);
 	push(@massages, @shortenUnitsMassage);
 	print $prefix, timespanToReldate($timespan =~ /^[+-]/ ? \@defaultMassages : \@massages, $timespan), $suffix, "\n";
+    } elsif ($isTimespanLines) {
+	my @massages = (\&massageWeekdays, \&massageForShortTimespan);
+	push(@massages, @shortenUnitsMassage);
+
+	while (readline($inputHandleRef)) {
+	    chomp;
+	    if (/^(([+-]?)\d+)((?:\s.*)?)$/) {
+		print $prefix, timespanToReldate($2 eq "" ? \@massages : \@defaultMassages, $1), $suffix, $3, "\n";
+	    } else {
+		print $_, "\n";
+	    }
+	}
     } elsif (defined $epoch) {
 	print $prefix, timespanToReldate(\@defaultMassages, $now - $epoch), $suffix, "\n";
     } else {
@@ -332,6 +344,7 @@ sub run {
 
     $isDoubleDash = 0;
     $timespan = undef;
+    $isTimespanLines = 0;
     $epoch = undef;
     $within = undef;
     $reset = undef;
@@ -396,6 +409,7 @@ sub run {
 	'prefix=s' => \$prefix,
 	'suffix=s' => \$suffix,
 	'timespan=s' => \$timespan,
+	'timespan-lines' => \$isTimespanLines,
 	'epoch=i' => \$epoch,
 	'short-units' => \$isShortUnits,
 	'short-relations' => \$isShortRelations,
@@ -433,18 +447,21 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN|--epoch-lines] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short] [--short-relations] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short] [--short-relations] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
+ echo [+-]SECONDS | reldate [...] --timespan-lines
+
  reldate [...] --epoch EPOCH
+ echo EPOCH | reldate [...] --epoch-lines
+
  reldate [...] FILE
 
     Options:
     --unbuffered                flush output after every line even when output is not to the terminal
     --date-pattern PATTERN	parse PATTERN as a date
     --epoch-pattern PATTERN	parse PATTERN as a Unix epoch (seconds since 1970)
-    --epoch-lines	        parse every line as a Unix epoch (seconds since 1970)
     --diff-pattern PATTERN	parse PATTERN as time difference
     --relative-to BASE-DATE     make all dates relative to BASE-DATE
     --relative-to-epoch EPOCH   make all dates relative to EPOCH
@@ -467,7 +484,9 @@ reldate - Show relative dates instead of absolute ones
     --short                     use -/+ and short units
 
     --timespan [+-]SECONDS      convert SECONDS difference to relative date
+    --timespan-lines	        parse every line as SECONDS difference
     --epoch EPOCH               convert EPOCH seconds to relative date
+    --epoch-lines	        parse every line as a Unix epoch (seconds since 1970)
 
     -?|-h|--help		brief help message
     --man			full documentation
@@ -619,6 +638,10 @@ SECONDS of time difference to directly convert to a relative date. Negative SECO
 
 Without a [+-] sign, prints a neutral representation of the passed time (e.g. I<16 minutes> instead of I<16 minutes ago>).
 
+=item B<--timespan-lines>
+
+Parse every line as SECONDS of time difference; optionally followed by whitespace and other text that is ignored).
+
 =item B<--epoch>
 
 Convert EPOCH seconds since the epoch (1970-01-01 UTC) to relative date.
@@ -639,7 +662,7 @@ B<reldate> turns absolute dates (e.g. I<09-02-2016>) into timespans relative to 
 
 It parses text from stdin (or passed FILE(s)) and replaces any date [as specified by PATTERN] with a relative one.
 
-It directly converts the passed timespan (in SECONDS), or the passed EPOCH.
+It directly converts the passed / read from stdin timespan (in SECONDS), or EPOCH.
 
 It prints the modification date, relative to now, of the passed FILE.
 
