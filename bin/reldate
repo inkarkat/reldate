@@ -36,6 +36,7 @@ my @shortenUnitsMassage = ();
 my $isShortRelations = 0;
 my $isShortUnits = 0;
 my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
+my $relativizer = \&ago;
 
 sub setNowSource {
     (undef, $nowFuncref) = @_;
@@ -196,7 +197,7 @@ sub reldateDelta {
 sub timespanToReldate {
     my $massagesRef = shift;
     my $timespan = shift;
-    my $reldate = ago($timespan, $precision);
+    my $reldate = $relativizer->($timespan, $precision);
 
     foreach my $massage (@$massagesRef) {
 	$reldate = $massage->($reldate);
