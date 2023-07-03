@@ -38,6 +38,11 @@ my $isShortUnits = 0;
 my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 my $relativizer = \&ago;
 
+sub renderDifference {
+    my $duration = shift;
+    return "" . (-1 * $duration);
+}
+
 sub setNowSource {
     (undef, $nowFuncref) = @_;
     $now = $nowFuncref->();
@@ -412,6 +417,9 @@ sub run {
 	'timespan=s' => \$timespan,
 	'timespan-lines' => \$isTimespanLines,
 	'epoch=i' => \$epoch,
+	'difference' => sub {
+	    $relativizer = \&renderDifference;
+	},
 	'short-units' => \$isShortUnits,
 	'short-relations' => \$isShortRelations,
 	'short' => sub {
@@ -448,7 +456,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--short] [--short-relations] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference] [--short] [--short-relations] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -480,6 +488,7 @@ reldate - Show relative dates instead of absolute ones
     --color never|always|auto   surround the relative date (and prefix / suffix if given) with reverse color
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
+    --difference		replace dates with a simple difference in [-]SECONDS instead of relative dates
     --short-relations           use -/+ instead of earlier / later
     --short-units               use short units
     --short                     use -/+ and short units
@@ -618,6 +627,10 @@ STRING to put before a recognized relative date. E.g. [ or ^[[01m.
 =item B<--suffix>
 
 STRING to put after a recognized relative date. E.g. ] or ^[[0m.
+
+=item B<--difference>
+
+Replace dates with a simple difference counted in seconds instead of relative dates. E.g. "2 minutes later" becomes "120".
 
 =item B<--short-relations>
 
