@@ -35,12 +35,51 @@ my @defaultMassages = (\&massageWeekdays, \&massageFull);
 my @shortenUnitsMassage = ();
 my $isShortRelations = 0;
 my $isShortUnits = 0;
-my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
+my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $isWorkDay, $WEEK_IN_SECONDS, $DAY_IN_SECONDS, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 my $relativizer = \&ago;
 
 sub renderDifference {
     my $duration = shift;
-    return "" . (-1 * $duration);
+    return '' . (-1 * $duration);
+}
+
+sub convert {
+    my $seconds = shift;
+    my $sign = ($seconds < 0 ? '-' : '');
+    $seconds = abs($seconds);
+
+    my $weeks = int($seconds / $WEEK_IN_SECONDS);
+    $seconds = $seconds - ($WEEK_IN_SECONDS * $weeks);
+    my $days = int($seconds / $DAY_IN_SECONDS);
+    $seconds = $seconds - ($DAY_IN_SECONDS * $days);
+    my $hours = int($seconds / 3600);
+    $seconds = $seconds - (3600 * $hours);
+    my $minutes = int($seconds / 60);
+    $seconds = $seconds - (60 * $minutes);
+
+    my $workDayPrefix = ($isWorkDay ? 'w' : '');
+
+    if ($minutes == 0 || $seconds == 0) {
+    	return ($sign .
+		($weeks > 0 ? $weeks . $workDayPrefix . 'w ' : '') .
+		($days > 0 ? $days . $workDayPrefix . 'd ' : '') .
+		($hours > 0 ? $hours . 'h ' : '')  .
+		($minutes > 0 ? $minutes . 'm ' : '') .
+		($seconds > 0 ? $seconds . 's ' : '')) =~ s/ $//r;
+    } else {
+	return $sign .
+		($weeks > 0 ? $weeks . $workDayPrefix . 'w ' : '') .
+		($days > 0 ? $days . $workDayPrefix . 'd ' : '') .
+		($weeks > 0 || $days > 0 || $hours > 0 ? sprintf('%02d', $hours) . ':' : '') .
+		($weeks > 0 || $days > 0 || $hours > 0 || $minutes > 0 ? sprintf('%02d', $minutes) . ':' : '') .
+		($weeks > 0 || $days > 0 || $hours > 0 || $minutes > 0 ? sprintf('%02d', $seconds) : sprintf('00:%02d', $seconds));
+    }
+}
+sub renderDuration {
+    my $integer = shift;
+
+    my $duration = convert(-1 * $integer);
+    return '' . $duration;
 }
 
 sub setNowSource {
@@ -340,6 +379,7 @@ sub run {
     $isPreferPast = 0;
     $isPreferFuture = 0;
     $isWithWeekday = 0;
+    $isWorkDay = 0;
     my $color = 'auto';
     my $isNoColor = 0;
     $prefix = '';
@@ -410,6 +450,7 @@ sub run {
 	'prefer-past' => \$isPreferPast,
 	'prefer-future' => \$isPreferFuture,
 	'with-weekday' => \$isWithWeekday,
+	'workday' => \$isWorkDay,
 	'color=s' => \$color,
 	'no-color' => \$isNoColor,
 	'prefix=s' => \$prefix,
@@ -419,6 +460,9 @@ sub run {
 	'epoch=i' => \$epoch,
 	'difference' => sub {
 	    $relativizer = \&renderDifference;
+	},
+	'duration' => sub {
+	    $relativizer = \&renderDuration;
 	},
 	'short-units' => \$isShortUnits,
 	'short-relations' => \$isShortRelations,
@@ -440,6 +484,9 @@ sub run {
 	$colorSuffix='';
     }
 
+    $DAY_IN_SECONDS = ($isWorkDay ? $ENV{'WORKDAY_SECONDS'} || 28800 : 86400);
+    $WEEK_IN_SECONDS = ($isWorkDay ? $ENV{'WORKWEEK_SECONDS'} || $DAY_IN_SECONDS * 5 : 604800);
+
     push(@shortenUnitsMassage, (\&massageToShortUnits)) if ($isShortUnits);
     push(@defaultMassages, @shortenUnitsMassage);
 
@@ -456,7 +503,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference] [--short] [--short-relations] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference|--duration] [--short] [--short-relations] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -489,6 +536,7 @@ reldate - Show relative dates instead of absolute ones
     --prefix STRING		text before relative date
     --suffix STRING		text after relative date
     --difference		replace dates with a simple difference in [-]SECONDS instead of relative dates
+    --duration			replace dates with a duration in [Ww ][Dd ] [Hh ][Mm ][Ss]|[HH:]MM:SS instead of relative dates
     --short-relations           use -/+ instead of earlier / later
     --short-units               use short units
     --short                     use -/+ and short units
@@ -631,6 +679,12 @@ STRING to put after a recognized relative date. E.g. ] or ^[[0m.
 =item B<--difference>
 
 Replace dates with a simple difference counted in seconds instead of relative dates. E.g. "2 minutes later" becomes "120".
+
+=item B<--duration>
+
+Replace dates with a duration in [Ww ][Dd ] [Hh ][Mm ][Ss]|[HH:]MM:SS instead of relative dates. E.g. "2 minutes later" becomes "02:11".
+
+With C<--precision>, only the given number of (largest) units is rendered, so 01:02:03 will be rendered with precision 2 as "1h 2m", with "3s" removed.
 
 =item B<--short-relations>
 
