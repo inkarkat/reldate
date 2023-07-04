@@ -503,7 +503,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference|--duration] [--short] [--short-relations] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference|--duration [--workday]] [--short] [--short-relations] [--short-units]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -537,6 +537,7 @@ reldate - Show relative dates instead of absolute ones
     --suffix STRING		text after relative date
     --difference		replace dates with a simple difference in [-]SECONDS instead of relative dates
     --duration			replace dates with a duration in [Ww ][Dd ] [Hh ][Mm ][Ss]|[HH:]MM:SS instead of relative dates
+    --workday			render days and larger units as working days
     --short-relations           use -/+ instead of earlier / later
     --short-units               use short units
     --short                     use -/+ and short units
@@ -685,6 +686,10 @@ Replace dates with a simple difference counted in seconds instead of relative da
 Replace dates with a duration in [Ww ][Dd ] [Hh ][Mm ][Ss]|[HH:]MM:SS instead of relative dates. E.g. "2 minutes later" becomes "02:11".
 
 With C<--precision>, only the given number of (largest) units is rendered, so 01:02:03 will be rendered with precision 2 as "1h 2m", with "3s" removed.
+
+=item B<--workday>
+
+Render days and larger units as working days (comprised of 8 hours, not 24) instead of calendar days, and adapt the unit (C<1wd>, not C<1d>), too. The exact counting can be configured via $WORKDAY_SECONDS and $WORKWEEK_SECONDS environment variables.
 
 =item B<--short-relations>
 
