@@ -43,12 +43,8 @@ sub renderDifference {
     return '' . (-1 * $duration);
 }
 
-sub convert {
+sub convertSecondsToDurationUnits {
     my $seconds = shift;
-
-    my @units = ();
-    push(@units, $seconds < 0 ? '-' : '');
-    $seconds = abs($seconds);
 
     my $weeks = int($seconds / $WEEK_IN_SECONDS);
     $seconds = $seconds - ($WEEK_IN_SECONDS * $weeks);
@@ -62,29 +58,36 @@ sub convert {
     my $workDayPrefix = ($isWorkDay ? 'w' : '');
 
     if ($minutes == 0 || $seconds == 0) {
-    	push(@units,
+    	return (
 		($weeks > 0 ? $weeks . $workDayPrefix . 'w' : ''),
 		($days > 0 ? $days . $workDayPrefix . 'd' : ''),
 		($hours > 0 ? $hours . 'h' : ''),
 		($minutes > 0 ? $minutes . 'm' : ''),
 		($seconds > 0 ? $seconds . 's' : ''));
     } else {
-	push(@units,
+	return (
 		($weeks > 0 ? $weeks . $workDayPrefix . 'w' : ''),
 		($days > 0 ? $days . $workDayPrefix . 'd' : ''),
 		($weeks > 0 || $days > 0 || $hours > 0 ? sprintf('%02d', $hours) . ':' : '') .
 		    ($weeks > 0 || $days > 0 || $hours > 0 || $minutes > 0 ? sprintf('%02d', $minutes) . ':' : '') .
 		    ($weeks > 0 || $days > 0 || $hours > 0 || $minutes > 0 ? sprintf('%02d', $seconds) : sprintf('00:%02d', $seconds)));
     }
-
-    return @units;
 }
 sub renderDuration {
-    my $integer = shift;
-    my @units = convert(-1 * $integer);
+    my ($integer, $precision) = @_;
 
-    my $sign = shift(@units);
-    return $sign . join(' ', grep { /\S/ } @units);
+    my $sign = ($integer > 0 ? '-' : '');
+    $integer = abs($integer);
+
+    my $seconds = $integer;
+    my @rounder = (60, 3600, $DAY_IN_SECONDS, $WEEK_IN_SECONDS);
+    while (1) {
+	my @units = grep { /\S/ } convertSecondsToDurationUnits($seconds);
+	return $sign . join(' ', @units) if (@units <= $precision);
+
+	my $r = shift(@rounder);
+	$seconds = int($integer / $r + 0.5) * $r;
+    };
 }
 
 sub setNowSource {
