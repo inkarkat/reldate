@@ -3,15 +3,15 @@ use Test::More;
 use Test::Reldate;
 
 run_produces_output(['--short-relations', '--timespan', '60'], '1 minute', 'timespan of 60 seconds with shortened relation');
-run_produces_output(['--short-relations', '--timespan', '+60'], '1 minute ago', 'timespan of +60 seconds with shortened relation');
-run_produces_output(['--short-relations', '--timespan', '-60'], 'in 1 minute', 'timespan of -60 seconds with shortened relation');
+run_produces_output(['--short-relations', '--timespan', '-60'], '1 minute ago', 'timespan of -60 seconds with shortened relation');
+run_produces_output(['--short-relations', '--timespan', '+60'], 'in 1 minute', 'timespan of +60 seconds with shortened relation');
 
 run_produces_output(['--short-relations', '--timespan', '120'], '2 minutes', 'timespan of 120 seconds with shortened relation');
 run_produces_output(['--short-relations', '--timespan', '122'], '2 minutes', 'timespan of 122 seconds with shortened relation');
 
 run_produces_output(['--short-relations', '--timespan', '0'], 'no time', 'timespan of 0 seconds with shortened relation');
-run_produces_output(['--short-relations', '--timespan', '+0'], 'just now', 'timespan of +0 seconds with shortened relation');
 run_produces_output(['--short-relations', '--timespan', '-0'], 'just now', 'timespan of -0 seconds with shortened relation');
+run_produces_output(['--short-relations', '--timespan', '+0'], 'just now', 'timespan of +0 seconds with shortened relation');
 run_produces_output(['--short-relations', '--timespan', '90000'], '1 day', 'timespan of 1 day with shortened relation');
 run_produces_output(['--short-relations', '--timespan', '32000000'], '1 year', 'timespan of 1 year with shortened relation');
 

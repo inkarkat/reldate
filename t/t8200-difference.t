@@ -2,18 +2,18 @@ use Modern::Perl;
 use Test::More;
 use Test::Reldate;
 
-run_produces_output(['--difference', '--timespan', '60'], '-60', 'timespan of 60 seconds as difference');
-run_produces_output(['--difference', '--timespan', '+60'], '-60', 'timespan of +60 seconds as difference');
-run_produces_output(['--difference', '--timespan', '-60'], '60', 'timespan of -60 seconds as difference');
+run_produces_output(['--difference', '--timespan', '60'], '60', 'timespan of 60 seconds as difference');
+run_produces_output(['--difference', '--timespan', '-60'], '-60', 'timespan of -60 seconds as difference');
+run_produces_output(['--difference', '--timespan', '+60'], '60', 'timespan of +60 seconds as difference');
 
-run_produces_output(['--difference', '--timespan', '120'], '-120', 'timespan of 120 seconds as difference');
-run_produces_output(['--difference', '--timespan', '122'], '-122', 'timespan of 122 seconds as difference');
+run_produces_output(['--difference', '--timespan', '120'], '120', 'timespan of 120 seconds as difference');
+run_produces_output(['--difference', '--timespan', '122'], '122', 'timespan of 122 seconds as difference');
 
 run_produces_output(['--difference', '--timespan', '0'], '0', 'timespan of 0 seconds as difference');
-run_produces_output(['--difference', '--timespan', '+0'], '0', 'timespan of +0 seconds as difference');
 run_produces_output(['--difference', '--timespan', '-0'], '0', 'timespan of -0 seconds as difference');
-run_produces_output(['--difference', '--timespan', '90000'], '-90000', 'timespan of 1 day as difference');
-run_produces_output(['--difference', '--timespan', '32000000'], '-32000000', 'timespan of 1 year as difference');
+run_produces_output(['--difference', '--timespan', '+0'], '0', 'timespan of +0 seconds as difference');
+run_produces_output(['--difference', '--timespan', '90000'], '90000', 'timespan of 1 day as difference');
+run_produces_output(['--difference', '--timespan', '-32000000'], '-32000000', 'timespan of 1 year as difference');
 
 run_produces_output(['--difference', '--epoch', $NOW + 60], '60', 'epoch 60 seconds later as difference');
 run_produces_output(['--difference', '--epoch', $NOW - 120], '-120', 'epoch 120 seconds earlier as difference');

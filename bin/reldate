@@ -320,7 +320,7 @@ sub process {
     } elsif (defined $timespan) {
 	my @massages = (\&massageWeekdays, \&massageForShortTimespan);
 	push(@massages, @shortenUnitsMassage);
-	print $prefix, timespanToReldate($timespan =~ /^[+-]/ ? \@defaultMassages : \@massages, $timespan), $suffix, "\n";
+	print $prefix, timespanToReldate($timespan =~ /^[+-]/ ? \@defaultMassages : \@massages, -1 * $timespan), $suffix, "\n";
     } elsif ($isTimespanLines) {
 	my @massages = (\&massageWeekdays, \&massageForShortTimespan);
 	push(@massages, @shortenUnitsMassage);
@@ -328,7 +328,7 @@ sub process {
 	while (readline($inputHandleRef)) {
 	    chomp;
 	    if (/^(([+-]?)\d+)((?:\s.*)?)$/) {
-		print $prefix, timespanToReldate($2 eq "" ? \@massages : \@defaultMassages, $1), $suffix, $3, "\n";
+		print $prefix, timespanToReldate($2 eq "" ? \@massages : \@defaultMassages, -1 * $1), $suffix, $3, "\n";
 	    } else {
 		print $_, "\n";
 	    }
@@ -715,9 +715,9 @@ Use "+2m" instead of "2 minutes later".
 
 =item B<--timespan>
 
-SECONDS of time difference to directly convert to a relative date. Negative SECONDS lie in the future.
+SECONDS of time difference to directly convert to a relative date. Positive SECONDS lie in the future, negative in the past.
 
-Without a [+-] sign, prints a neutral representation of the passed time (e.g. I<16 minutes> instead of I<16 minutes ago>).
+Without a [+-] sign, prints a neutral representation of the passed time (e.g. I<16 minutes> instead of I<in 16 minutes>).
 
 =item B<--timespan-lines>
 

@@ -3,15 +3,15 @@ use Test::More;
 use Test::Reldate;
 
 run_produces_output(['--short-units', '--timespan', '60'], '1m', 'timespan of 60 seconds with shortened unit');
-run_produces_output(['--short-units', '--timespan', '+60'], '1m ago', 'timespan of +60 seconds with shortened unit');
-run_produces_output(['--short-units', '--timespan', '-60'], 'in 1m', 'timespan of -60 seconds with shortened unit');
+run_produces_output(['--short-units', '--timespan', '-60'], '1m ago', 'timespan of -60 seconds with shortened unit');
+run_produces_output(['--short-units', '--timespan', '+60'], 'in 1m', 'timespan of +60 seconds with shortened unit');
 
 run_produces_output(['--short-units', '--timespan', '120'], '2m', 'timespan of 120 seconds with shortened unit');
 run_produces_output(['--short-units', '--timespan', '122'], '2m', 'timespan of 122 seconds with shortened unit');
 
 run_produces_output(['--short-units', '--timespan', '0'], 'no time', 'timespan of 0 seconds with shortened unit');
-run_produces_output(['--short-units', '--timespan', '+0'], 'just now', 'timespan of +0 seconds with shortened unit');
 run_produces_output(['--short-units', '--timespan', '-0'], 'just now', 'timespan of -0 seconds with shortened unit');
+run_produces_output(['--short-units', '--timespan', '+0'], 'just now', 'timespan of +0 seconds with shortened unit');
 run_produces_output(['--short-units', '--timespan', '90000'], '1d', 'timespan of 1 day with shortened unit');
 run_produces_output(['--short-units', '--timespan', '32000000'], '1y', 'timespan of 1 year with shortened unit');
 

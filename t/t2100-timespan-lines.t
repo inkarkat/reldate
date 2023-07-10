@@ -6,20 +6,20 @@ my @args = ('--timespan-lines');
 
 run_with_input_produces_output([@args], '
 60
-+60
 -60
++60
 
 120
 122
 
 1
 0
-+0
 -0
++0
 
 86400
-+86400
--86400', '
+-86400
++86400', '
 1 minute
 1 minute ago
 in 1 minute
@@ -46,8 +46,8 @@ following 380775726
 380775726 foobar
 380775726	tab separated
 380775726	  
-+6000
--42', '
+-6000
++42', '
 no date
  380775726
 	380775726
