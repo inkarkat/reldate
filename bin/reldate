@@ -55,7 +55,7 @@ sub convertSecondsToDurationUnits {
     my $minutes = int($seconds / 60);
     $seconds = $seconds - (60 * $minutes);
 
-    my $workDayPrefix = ($isWorkDay ? 'w' : '');
+    my $workDayPrefix = ($isWorkDay ? $ENV{'WORK_PREFIX'} || 'w' : '');
 
     if ($minutes == 0 || $seconds == 0) {
     	return (
