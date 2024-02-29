@@ -35,6 +35,7 @@ my @defaultMassages = (\&massageWeekdays, \&massageFull);
 my @shortenUnitsMassage = ();
 my $isShortRelations = 0;
 my $isShortUnits = 0;
+my $isNoDirection = 0;
 my ($datePattern, $epochPattern, $diffPattern, $keepWidth, $precision, $isPreferPast, $isPreferFuture, $isWithWeekday, $isWorkDay, $WEEK_IN_SECONDS, $DAY_IN_SECONDS, $colorPrefix, $colorSuffix, $prefix, $suffix, $isRelative, $isDelta, $isEach);
 my $relativizer = \&ago;
 
@@ -171,6 +172,16 @@ sub massageFull {
     $relativeDate = 'yesterday' if ($relativeDate eq '1 day ago');
     $relativeDate = 'tomorrow' if ($relativeDate eq '1 day from now');
     $relativeDate =~ s/(.*) from now$/in $1/;
+
+    return $relativeDate;
+}
+
+sub massageNoDirection {
+    my $relativeDate = shift;
+
+    $relativeDate = ($isShortRelations && $isShortUnits ? '0s' : 'just now') if ($relativeDate eq 'right now');
+    $relativeDate =~ s/ from now$| ago$//;
+    $relativeDate =~ s/^the previous |^coming //;
 
     return $relativeDate;
 }
@@ -478,6 +489,7 @@ sub run {
 	    $isShortRelations = 1;
 	    $isShortUnits = 1;
 	},
+	'no-direction' =>\$isNoDirection,
     ) or pod2usage(2);
     pod2usage(-exitval => 0, -verbose => 0) if $help;
     pod2usage(-exitval => 0, -verbose => 2) if $man;
@@ -496,6 +508,7 @@ sub run {
     $WEEK_IN_SECONDS = ($isWorkDay ? $ENV{'WORKWEEK_SECONDS'} || $DAY_IN_SECONDS * 5 : 604800);
 
     push(@shortenUnitsMassage, (\&massageToShortUnits)) if ($isShortUnits);
+    @defaultMassages = (\&massageWeekdays, \&massageNoDirection) if ($isNoDirection);
     push(@defaultMassages, @shortenUnitsMassage);
 
     process($argumentsRef, $inputHandleRef);
@@ -511,7 +524,7 @@ reldate - Show relative dates instead of absolute ones
 
 =head1 SYNOPSIS
 
- echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference|--duration [--workday]] [--short] [--short-relations] [--short-units]
+ echo TEXT-WITH-DATES | reldate [--date-pattern PATTERN] [--epoch-pattern PATTERN] [--diff-pattern PATTERN] [--relative-to BASE-DATE|--relative-to-epoch BASE-EPOCH|--relative-to-first|--relative-each|--delta-to-first|--delta-each] [--within (line|PATTERN|all] [--reset RESET-PATTERN)] [--keep-width] [--precision N] [--prefer-past|--prefer-future] [--with-weekday] [--color never|always|auto | --no-color] [--prefix STRING] [--suffix STRING] [--difference|--duration [--workday]] [--short] [--short-relations] [--short-units] [--no-direction]
  reldate [...] -- FILE, reldate [...] FILE1 FILE2 ...
 
  reldate [...] --timespan [+-]SECONDS
@@ -549,6 +562,7 @@ reldate - Show relative dates instead of absolute ones
     --short-relations           use -/+ instead of earlier / later
     --short-units               use short units
     --short                     use -/+ and short units
+    --no-direction		no "in / ago"
 
     --timespan [+-]SECONDS      convert SECONDS difference to relative date
     --timespan-lines	        parse every line as SECONDS difference
@@ -712,6 +726,10 @@ Use "2m" instead of "2 minutes".
 Combination of C<--short-relations> and C<--short-units>.
 
 Use "+2m" instead of "2 minutes later".
+
+=item B<--no-direction>
+
+Don't indicate whether the relative date is in the past or future.
 
 =item B<--timespan>
 
