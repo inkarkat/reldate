@@ -6,6 +6,7 @@ run_with_input_produces_output([], "no dates\nfound here", "no dates\nfound here
 run_with_input_produces_output([], "At 20190122_203000.", "At just now.", 'simple format now');
 run_with_input_produces_output([], "At 20190122_060000.", "At 15 hours ago.", 'simple format earlier time');
 run_with_input_produces_output([], "At 20190108_060000.", "At 15 days ago.", 'simple format earlier date');
+run_with_input_produces_output([], 'At 00000000 is not a date.', "At 00000000 is not a date.", '8 zeros is not parsed as date');
 
 run_with_input_produces_output([], qq{
 At 20180501_071159, we said "Foo".
