@@ -777,8 +777,12 @@ On CentOS, this requires the following packages:
 
 =head1 DEVELOPMENT
 
+On Ubuntu, this requires the following additional packages:
+
+  $ apt-get install libtest-script-perl
+
 Run the test suite from the project directory via
 
-  $ prove -I.
+  $ TZ='Europe/Berlin' prove -I.
 
 =cut
