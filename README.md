@@ -13,7 +13,7 @@ It prints the modification date, relative to now, of the passed FILE.
 ### DEPENDENCIES
 On Ubuntu, this requires the following packages:
 
-    $ apt-get install libio-interactive-perl libmodern-perl-perl libtime-duration-perl
+    $ apt-get install libio-interactive-perl libmodern-perl-perl libtime-duration-perl perl-doc
 
 On CentOS, this requires the following packages:
 
