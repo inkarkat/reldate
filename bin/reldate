@@ -58,7 +58,9 @@ sub convertSecondsToDurationUnits {
 
     my $workDayPrefix = ($isWorkDay ? $ENV{'WORK_PREFIX'} || 'w' : '');
 
-    if ($minutes == 0 || $seconds == 0) {
+    if ($weeks == 0 && $days == 0 && $hours == 0 && $minutes == 0 && $seconds == 0) {
+	return ('0s');
+    } elsif ($minutes == 0 || $seconds == 0) {
     	return (
 		($weeks > 0 ? $weeks . $workDayPrefix . 'w' : ''),
 		($days > 0 ? $days . $workDayPrefix . 'd' : ''),

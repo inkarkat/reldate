@@ -9,9 +9,9 @@ run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan'
 run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '120'], '2m', 'timespan of 120 seconds as duration');
 run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '122'], '02:02', 'timespan of 122 seconds as duration');
 
-run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '0'], '', 'timespan of 0 seconds as duration');
-run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '-0'], '', 'timespan of -0 seconds as duration');
-run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '+0'], '', 'timespan of +0 seconds as duration');
+run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '0'], '0s', 'timespan of 0 seconds as duration');
+run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '-0'], '0s', 'timespan of -0 seconds as duration');
+run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '+0'], '0s', 'timespan of +0 seconds as duration');
 run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '90000'], '3wd 1h', 'timespan of 1 day as duration');
 run_produces_output(['--duration', '--precision', '9', '--workday', '--timespan', '-32000000'], '-222ww 1wd 00:53:20', 'timespan of 1 year as duration');
 
