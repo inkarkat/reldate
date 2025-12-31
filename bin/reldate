@@ -236,24 +236,24 @@ sub massageToShortUnits {
 sub reldateNormal {
     my $string = shift;
     my @diffMassages = (\&massageEach);
-    $string =~ 	s/${datePattern}/eval { $colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix; } || do { $&; }/ge if $datePattern;
-    $string =~ 	s/${epochPattern}/eval { $colorPrefix . $prefix . reldate(\@defaultMassages, $now, $+{epoch}, $&) . $suffix . $colorSuffix; } || do { $&; }/ge if $epochPattern;
-    $string =~ 	s/${diffPattern}/eval { $colorPrefix . $prefix . reldate(\@diffMassages, 0, fromDiff($+{sign}, $+{seconds}, $+{minutes}, $+{hours}, $+{days}, $+{weeks}, $+{months}, $+{years}), $&) . $suffix . $colorSuffix; } || do { $&; }/ge if $diffPattern;
+    $string =~ 	s/${datePattern}/do { my $r = eval { $colorPrefix . $prefix . reldate(\@defaultMassages, $now, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&) . $suffix . $colorSuffix; }; defined $r ? $r : $&; }/ge if $datePattern;
+    $string =~ 	s/${epochPattern}/do { my $r = eval { $colorPrefix . $prefix . reldate(\@defaultMassages, $now, $+{epoch}, $&) . $suffix . $colorSuffix; }; defined $r ? $r : $&; }/ge if $epochPattern;
+    $string =~ 	s/${diffPattern}/do { my $r = eval { $colorPrefix . $prefix . reldate(\@diffMassages, 0, fromDiff($+{sign}, $+{seconds}, $+{minutes}, $+{hours}, $+{days}, $+{weeks}, $+{months}, $+{years}), $&) . $suffix . $colorSuffix; }; defined $r ? $r : $&; }/ge if $diffPattern;
     return $string;
 }
 
 sub reldateBase {
     my $string = shift;
-    $string =~ s/${datePattern}/eval { deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&); } || do { $&; }/ge if $datePattern;
-    $string =~ s/${epochPattern}/eval { deltaReplacement(1, $+{epoch}, $&); } || do { $&; }/ge if $epochPattern;
+    $string =~ s/${datePattern}/do { my $r = eval { deltaReplacement(1, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&); }; defined $r ? $r : $&; }/ge if $datePattern;
+    $string =~ s/${epochPattern}/do { my $r = eval { deltaReplacement(1, $+{epoch}, $&); }; defined $r ? $r : $&; }/ge if $epochPattern;
     return $string;
 }
 
 sub reldateDelta {
     my $string = shift;
     my $count = 0;
-    $string =~ s/${datePattern}/eval { deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&); } || do { $&; }/ge if $datePattern;
-    $string =~ s/${epochPattern}/eval { deltaReplacement($count++, $+{epoch}, $&); } || do { $&; }/ge if $epochPattern;
+    $string =~ s/${datePattern}/do { my $r = eval { deltaReplacement($count++, toEpoch($+{seconds}, $+{minutes}, $+{hours}, $+{day}, $+{month}, $+{year}, $+{timezone}), $&); }; defined $r ? $r : $&; }/ge if $datePattern;
+    $string =~ s/${epochPattern}/do { my $r = eval { deltaReplacement($count++, $+{epoch}, $&); }; defined $r ? $r : $&; }/ge if $epochPattern;
     return $string;
 }
 
@@ -374,7 +374,7 @@ sub process {
 	    # parsing.
 	    $now = $nowFuncref->() unless $hasDifferentBase;
 
-	    s/${splitPattern}/eval { $algorithm->($&); } || do { $&; }/ges;
+	    s/${splitPattern}/do { my $r = eval { $algorithm->($&); }; defined $r ? $r : $&; }/ges;
 	    print;
 	}
     }

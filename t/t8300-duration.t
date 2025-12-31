@@ -24,6 +24,8 @@ run_with_input_produces_output(['--duration', '--precision', '9', '--delta-each'
 run_with_input_produces_output(['--duration', '--precision', '9', '--relative-to-first'], 'At 20181208_060000, she said "20181207_060000 was good, until 20181207_070000".', 'At 20181208_060000, she said "-1d was good, until also -23h".', 'relative to first as duration');
 run_with_input_produces_output(['--duration', '--precision', '9', '--relative-to', '20190108_060000'], 'At 20181208_060000, she said "20181207_060000 was good, until 20181207_070000".', 'At -4w 3d, she said "-4w 4d was good, until -4w 3d 23h".', 'relative to base date as duration');
 
+run_with_input_produces_output(['--duration', '--precision', '9', '--delta-to-first'], 'At @1547984400, she met @1547984400.', 'At -2d 7h 50m, she met 0s.', 'delta duration of zero to first');
+
 run_with_input_produces_output(['--duration', '--precision', '9', '--keep-width', '--prefix', '-[', '--suffix', ']-'], 'At 20190122_060000.', 'At -[-14h 30m   ]-.', 'constant-width output as duration');
 
 done_testing;

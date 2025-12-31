@@ -24,6 +24,8 @@ run_with_input_produces_output(['--difference', '--delta-each'], 'At 20181208_06
 run_with_input_produces_output(['--difference', '--relative-to-first'], 'At 20181208_060000, she said "20181207_060000 was good, until 20181207_070000".', 'At 20181208_060000, she said "-86400 was good, until also -82800".', 'relative to first as difference');
 run_with_input_produces_output(['--difference', '--relative-to', '20190108_060000'], 'At 20181208_060000, she said "20181207_060000 was good, until 20181207_070000".', 'At -2678400, she said "-2764800 was good, until -2761200".', 'relative to base date as difference');
 
+run_with_input_produces_output(['--difference', '--precision', '9', '--delta-to-first'], 'At @1547984400, she met @1547984400.', 'At -201000, she met 0.', 'delta difference of zero to first');
+
 run_with_input_produces_output(['--difference', '--keep-width', '--prefix', '-[', '--suffix', ']-'], 'At 20190122_060000.', 'At -[-52200     ]-.', 'constant-width output as difference');
 
 done_testing;
