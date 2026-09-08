@@ -1,3 +1,7 @@
+# reldate
+    
+![Build Status](https://github.com/inkarkat/reldate/actions/workflows/build.yml/badge.svg)
+    
 ### DESCRIPTION
 reldate turns absolute dates (e.g. *09-02-2016*) into timespans relative
 to the current date (*2 days ago*).
